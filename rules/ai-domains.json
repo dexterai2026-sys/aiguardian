@@ -1,0 +1,12 @@
+[
+  { "domain": "chat.openai.com", "name": "ChatGPT" },
+  { "domain": "chatgpt.com", "name": "ChatGPT" },
+  { "domain": "claude.ai", "name": "Claude" },
+  { "domain": "gemini.google.com", "name": "Gemini" },
+  { "domain": "copilot.microsoft.com", "name": "Copilot" },
+  { "domain": "character.ai", "name": "Character.AI" },
+  { "domain": "beta.character.ai", "name": "Character.AI" },
+  { "domain": "perplexity.ai", "name": "Perplexity" },
+  { "domain": "poe.com", "name": "Poe" },
+  { "domain": "you.com", "name": "You.com" }
+]

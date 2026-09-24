@@ -1,0 +1,31 @@
+[
+  {
+    "category": "pii.payment_card",
+    "pattern": "\\b(?:\\d[ -]?){13,19}\\b",
+    "validation": "luhn",
+    "confidence": 0.9,
+    "placeholderPrefix": "CARD",
+    "description": "Digit sequences shaped like a card number; luhn validation narrows false positives."
+  },
+  {
+    "category": "pii.ssn",
+    "pattern": "\\b\\d{3}-\\d{2}-\\d{4}\\b",
+    "confidence": 0.85,
+    "placeholderPrefix": "SSN",
+    "description": "US SSN format (###-##-####). Format-only; obviously-invalid area/group numbers are a detector-side refinement, not this pattern's job."
+  },
+  {
+    "category": "pii.phone",
+    "pattern": "\\b(?:\\+?1[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}\\b",
+    "confidence": 0.75,
+    "placeholderPrefix": "PHONE",
+    "description": "North American phone number formats. International formats are a follow-up (see docs/phase-1-plan.md open questions)."
+  },
+  {
+    "category": "pii.email",
+    "pattern": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b",
+    "confidence": 0.95,
+    "placeholderPrefix": "EMAIL",
+    "description": "Standard email address shape."
+  }
+]
