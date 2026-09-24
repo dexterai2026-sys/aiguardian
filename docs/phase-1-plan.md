@@ -65,10 +65,10 @@ format land before any detector code, since detectors and corpus tests both depe
 - Add a short root `README.md` that states the project name/status and points to `CLAUDE.md`.
 - Add `.gitignore` (node_modules, build output, `.env`, editor files).
 - Add `.env.example` (empty for now — no secrets exist yet in Phase 1).
-- Decide and add a `LICENSE` file. **Needs owner decision**: CLAUDE.md rules out GPL for the
-  Android keyboard fork specifically, but no license is chosen for this repo overall. Ask the
-  owner before adding one (Apache-2.0 and MIT are the likely candidates given the FlorisBoard
-  note).
+- License: proprietary, all rights reserved (owner decision). No `LICENSE` file is added; this
+  is documented in `CLAUDE.md` and `README.md` instead, along with a note to ask before adding
+  any dependency whose license would require disclosing or relicensing this repo's source (e.g.
+  GPL-family licenses).
 - No tests needed (no code yet). Acceptance: repo has an initial commit history and a human
   reading the repo root understands what it is.
 
@@ -282,7 +282,6 @@ format land before any detector code, since detectors and corpus tests both depe
 
 ## Open questions for the owner (surface before/at the relevant PR, not all at once)
 
-- License choice for the repo (PR 0).
 - Phone-number library vs. hand-rolled regex, and whether international numbers are in scope
   for Phase 1 (PR 5).
 - Fuzzy-matching approach/dependency for vault matching (PR 9).
