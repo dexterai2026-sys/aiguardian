@@ -14,6 +14,11 @@ export default tseslint.config(
       // Bare `any` must be justified with a comment (CLAUDE.md convention); this rule flags
       // any occurrence so the reviewer can check for that comment.
       "@typescript-eslint/no-explicit-any": "warn",
+      // Allow a leading underscore to mark an intentionally-unused parameter, e.g. in stubs.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
   eslintConfigPrettier,
