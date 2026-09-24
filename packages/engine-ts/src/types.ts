@@ -9,28 +9,38 @@
  * The initial category enum from CLAUDE.md. Categories may only be added by updating this
  * list, the shared rules in /rules, the shared corpus in /test-corpus, and (from Phase 3
  * onward) the backend enum, all together.
+ *
+ * Defined as a const array (rather than a plain union) so validators — the corpus loader, the
+ * rules loader — can check category membership at runtime, not just at compile time.
  */
-export type Category =
-  | "pii.name"
-  | "pii.home_address"
-  | "pii.school"
-  | "pii.phone"
-  | "pii.email"
-  | "pii.ssn"
-  | "pii.payment_card"
-  | "pii.bank_account"
-  | "pii.dob"
-  | "pii.medical"
-  | "pii.government_id"
-  | "secret.api_key"
-  | "secret.password"
-  | "vault.match"
-  | "injection.hidden_text"
-  | "injection.instruction_pattern"
-  | "content.self_harm"
-  | "content.sexual"
-  | "content.secrecy_from_parents"
-  | "content.violence";
+export const CATEGORIES = [
+  "pii.name",
+  "pii.home_address",
+  "pii.school",
+  "pii.phone",
+  "pii.email",
+  "pii.ssn",
+  "pii.payment_card",
+  "pii.bank_account",
+  "pii.dob",
+  "pii.medical",
+  "pii.government_id",
+  "secret.api_key",
+  "secret.password",
+  "vault.match",
+  "injection.hidden_text",
+  "injection.instruction_pattern",
+  "content.self_harm",
+  "content.sexual",
+  "content.secrecy_from_parents",
+  "content.violence",
+] as const;
+
+export type Category = (typeof CATEGORIES)[number];
+
+export function isCategory(value: unknown): value is Category {
+  return typeof value === "string" && (CATEGORIES as readonly string[]).includes(value);
+}
 
 /**
  * Detection tier that produced a finding. Tier 3 (on-device ML) is out of scope for Phase 1

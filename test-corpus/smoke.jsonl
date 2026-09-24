@@ -1,0 +1,3 @@
+{"id": "smoke-addr-001", "text": "we live at 42 Maple Street", "expected": [{"category": "pii.home_address", "start": 11, "end": 26}], "notes": "loader smoke test, matches the example in CLAUDE.md"}
+{"id": "smoke-email-001", "text": "contact me at jane@example.com please", "expected": [{"category": "pii.email", "start": 14, "end": 30}], "notes": "loader smoke test, single email finding"}
+{"id": "smoke-neg-001", "text": "my favorite number is 42", "expected": [], "notes": "loader smoke test, hard negative: no PII present"}
