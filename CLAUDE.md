@@ -26,7 +26,7 @@ Most people, especially kids, do not understand the risks of sharing personal da
 These rules override convenience, features, and deadlines. If a task seems to require breaking one, stop and ask the owner.
 
 - **Prompt and response text never leaves the device.** All detection runs locally on each endpoint. No typed text, pasted text, AI response text, or file content is ever sent to our backend or any third party.
-- **Alerts are category-only.** An alert says *what kind* of event happened, where, and when (e.g., `pii.home_address`, `android`, timestamp), never the content. The database schema must make storing content impossible (enum categories, no free-text payload fields).
+- **Alerts are category-only.** An alert says _what kind_ of event happened, where, and when (e.g., `pii.home_address`, `android`, timestamp), never the content. The database schema must make storing content impossible (enum categories, no free-text payload fields).
 - **The protected-values vault is end-to-end encrypted.** It is encrypted on-device with a key derived from the family passphrase. The server stores ciphertext only and can never decrypt it. A lost passphrase means a lost vault, by design.
 - **Never inspect password fields**, fields flagged as incognito/no-personalized-learning, or payment fields in non-AI contexts.
 - **No third-party analytics or advertising SDKs** in any endpoint. Crash reporting must be opt-in for release builds and scrubbed of any user text.
@@ -108,7 +108,12 @@ Add categories only by updating this list, the shared rules, the corpus, and the
 `/test-corpus/*.jsonl`, one case per line:
 
 ```json
-{"id": "addr-001", "text": "we live at 42 Maple Street", "expected": [{"category": "pii.home_address", "start": 11, "end": 26}], "notes": "basic street address"}
+{
+  "id": "addr-001",
+  "text": "we live at 42 Maple Street",
+  "expected": [{ "category": "pii.home_address", "start": 11, "end": 26 }],
+  "notes": "basic street address"
+}
 ```
 
 Include hard negatives (text that looks like PII but is not), realistic kid and adult phrasing, and multi-finding cases.
@@ -154,14 +159,14 @@ Include hard negatives (text that looks like PII but is not), realistic kid and 
 
 ## Roadmap and current status
 
-| Phase | Scope | Status |
-|---|---|---|
-| 1 | Shared rules, test corpus, TypeScript engine (Tiers 1–2), CI | **In progress** |
-| 2 | Browser extension (personal mode first, then family hooks) | Not started |
-| 3 | Backend + parent dashboard, pairing, alerts, heartbeats | Not started |
-| 4 | Android app (keyboard + DNS VPN), APK via GitHub Actions | Not started |
-| 5 | Desktop app (Windows, then macOS) | Not started |
-| 6 | Android accessibility (direct-download edition), ML tier, iOS research | Not started |
+| Phase | Scope                                                                  | Status          |
+| ----- | ---------------------------------------------------------------------- | --------------- |
+| 1     | Shared rules, test corpus, TypeScript engine (Tiers 1–2), CI           | **In progress** |
+| 2     | Browser extension (personal mode first, then family hooks)             | Not started     |
+| 3     | Backend + parent dashboard, pairing, alerts, heartbeats                | Not started     |
+| 4     | Android app (keyboard + DNS VPN), APK via GitHub Actions               | Not started     |
+| 5     | Desktop app (Windows, then macOS)                                      | Not started     |
+| 6     | Android accessibility (direct-download edition), ML tier, iOS research | Not started     |
 
 Update this table when phases start or finish.
 

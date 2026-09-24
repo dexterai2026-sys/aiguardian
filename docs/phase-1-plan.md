@@ -40,22 +40,22 @@ By the end of Phase 1:
 Tasks are ordered so each PR builds on a merged, tested predecessor. Rule schema and corpus
 format land before any detector code, since detectors and corpus tests both depend on them.
 
-| # | PR | Depends on |
-|---|----|------------|
-| 0 | Commit `CLAUDE.md` and repo scaffolding | — |
-| 1 | Monorepo tooling (pnpm, TS, lint/format) | 0 |
-| 2 | `engine-ts` package skeleton + shared types | 1 |
-| 3 | Test corpus format, loader, and validation | 2 |
-| 4 | Shared rules schema (`/rules`) + AI domain list | 2 |
-| 5 | Tier 1: structured PII detectors (card, SSN, phone, email) | 3, 4 |
-| 6 | Tier 1: address, secrets, DOB, government ID, bank, medical | 5 |
-| 7 | Tier 1: prompt-injection detectors | 5 |
-| 8 | Tier 1: family-mode content-flag detectors | 5 |
-| 9 | Tier 2: personal vault matching | 3, 4 |
-| 10 | `mask()` / `restore()` | 5–9 (needs real findings to mask) |
-| 11 | `detect()` orchestration, overlap resolution, perf | 5–10 |
-| 12 | CI pipeline (lint, typecheck, test, corpus report, quality gate) | 11 |
-| 13 | Docs, ADRs, roadmap update, Phase 1 close-out | 12 |
+| #   | PR                                                               | Depends on                        |
+| --- | ---------------------------------------------------------------- | --------------------------------- |
+| 0   | Commit `CLAUDE.md` and repo scaffolding                          | —                                 |
+| 1   | Monorepo tooling (pnpm, TS, lint/format)                         | 0                                 |
+| 2   | `engine-ts` package skeleton + shared types                      | 1                                 |
+| 3   | Test corpus format, loader, and validation                       | 2                                 |
+| 4   | Shared rules schema (`/rules`) + AI domain list                  | 2                                 |
+| 5   | Tier 1: structured PII detectors (card, SSN, phone, email)       | 3, 4                              |
+| 6   | Tier 1: address, secrets, DOB, government ID, bank, medical      | 5                                 |
+| 7   | Tier 1: prompt-injection detectors                               | 5                                 |
+| 8   | Tier 1: family-mode content-flag detectors                       | 5                                 |
+| 9   | Tier 2: personal vault matching                                  | 3, 4                              |
+| 10  | `mask()` / `restore()`                                           | 5–9 (needs real findings to mask) |
+| 11  | `detect()` orchestration, overlap resolution, perf               | 5–10                              |
+| 12  | CI pipeline (lint, typecheck, test, corpus report, quality gate) | 11                                |
+| 13  | Docs, ADRs, roadmap update, Phase 1 close-out                    | 12                                |
 
 ## Detailed tasks
 
@@ -138,7 +138,7 @@ format land before any detector code, since detectors and corpus tests both depe
 - Tests: rules loader validates the seed files; a test asserting every category in the shared
   `Category` type that has a Tier-1 detector has a corresponding rule entry (keeps rules and
   types from drifting apart).
-- No detection logic yet — this PR only makes rule *data* loadable and validated.
+- No detection logic yet — this PR only makes rule _data_ loadable and validated.
 
 ### PR 5 — Tier 1: structured PII detectors (card, SSN, phone, email)
 
@@ -166,8 +166,8 @@ format land before any detector code, since detectors and corpus tests both depe
   limitation), `pii.dob`, `pii.government_id`, `pii.bank_account`, `pii.medical` (keyword/phrase
   based), `secret.api_key` (common vendor prefixes: `sk-`, `AKIA`, `ghp_`, etc., plus a generic
   high-entropy-string fallback), `secret.password` (context-based: flag only when near a
-  password-looking label in *non*-password-field text, never inspect actual password fields per
-  the privacy principle — clarify in code comments that this detector is about text *content*
+  password-looking label in _non_-password-field text, never inspect actual password fields per
+  the privacy principle — clarify in code comments that this detector is about text _content_
   mentioning credentials, not form-field inspection, which is an extension/app concern for later
   phases).
 - Expand corpus files accordingly, with generous hard negatives for address and medical (highest
