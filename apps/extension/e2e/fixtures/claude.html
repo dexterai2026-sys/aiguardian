@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-guardian-fixture-target="claude">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guardian Claude.ai-adapter fixture</title>
+  </head>
+  <body>
+    <!-- Structure trimmed from a real, saved Claude.ai conversation snapshot down to the
+         attributes adapters/claude.ts's selectors key on - see that file's docs. The
+         `data-guardian-fixture-target` attribute above isn't part of Claude.ai's own markup; it
+         only tells every other content script to stay off this page in tests (see
+         lib/fixtureTarget.ts). -->
+    <div
+      contenteditable="true"
+      role="textbox"
+      data-testid="chat-input"
+      aria-label="Write your prompt to Claude"
+      class="tiptap ProseMirror"
+      style="width: 600px; min-height: 40px; border: 1px solid #ccc"
+    ></div>
+    <button type="button" data-testid="chat-input-send" aria-label="Send message">Send</button>
+    <div id="conversation"></div>
+
+    <script>
+      // Simulates Claude.ai's own real behavior, verified against the saved snapshot: the send
+      // button, unlike ChatGPT's, is always present in the DOM (no equivalent of ChatGPT's
+      // appears-only-once-there's-text gap here).
+      const composeBox = document.querySelector('[data-testid="chat-input"]');
+      const sendButton = document.querySelector('[data-testid="chat-input-send"]');
+      const conversation = document.getElementById("conversation");
+
+      function send() {
+        const bubble = document.createElement("div");
+        bubble.setAttribute("data-testid", "user-message");
+        bubble.textContent = composeBox.textContent;
+        conversation.appendChild(bubble);
+        composeBox.textContent = "";
+      }
+
+      sendButton.addEventListener("click", send);
+      composeBox.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          send();
+        }
+      });
+
+      window.simulateAiResponse = function (text) {
+        const response = document.createElement("div");
+        response.setAttribute("data-testid", "assistant-message");
+        response.textContent = text;
+        conversation.appendChild(response);
+      };
+    </script>
+  </body>
+</html>

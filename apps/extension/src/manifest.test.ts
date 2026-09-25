@@ -22,7 +22,11 @@ function readJson<T>(path: string): T {
  * Add a new entry to ADAPTER_CONTENT_SCRIPTS here whenever a new adapter's content script is added
  * (PR 9+), and remove its domain(s) from the generic fallback's own matches at the same time.
  */
-const ADAPTER_CONTENT_SCRIPTS = ["src/content-scripts/chatgpt.ts"];
+const ADAPTER_CONTENT_SCRIPTS = [
+  "src/content-scripts/chatgpt.ts",
+  "src/content-scripts/claude.ts",
+  "src/content-scripts/gemini.ts",
+];
 
 describe("every AI domain is covered by exactly one content script", () => {
   const manifest = readJson<{ content_scripts: ContentScriptEntry[] }>("../manifest.json");

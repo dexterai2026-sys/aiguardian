@@ -22,9 +22,15 @@
       "js": ["src/content-scripts/chatgpt.ts"]
     },
     {
+      "matches": ["https://claude.ai/*", "http://localhost/*"],
+      "js": ["src/content-scripts/claude.ts"]
+    },
+    {
+      "matches": ["https://gemini.google.com/*", "http://localhost/*"],
+      "js": ["src/content-scripts/gemini.ts"]
+    },
+    {
       "matches": [
-        "https://claude.ai/*",
-        "https://gemini.google.com/*",
         "https://copilot.microsoft.com/*",
         "https://character.ai/*",
         "https://beta.character.ai/*",

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-guardian-fixture-target="gemini">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guardian Gemini-adapter fixture</title>
+  </head>
+  <body>
+    <!-- Structure trimmed from a real, saved Gemini conversation snapshot down to the attributes
+         adapters/gemini.ts's selectors key on - see that file's docs. The
+         `data-guardian-fixture-target` attribute above isn't part of Gemini's own markup; it only
+         tells every other content script to stay off this page in tests (see
+         lib/fixtureTarget.ts). -->
+    <rich-textarea>
+      <div
+        contenteditable="true"
+        role="textbox"
+        aria-label="Enter a prompt for Gemini"
+        data-placeholder="Ask Gemini"
+        class="ql-editor"
+        style="width: 600px; min-height: 40px; border: 1px solid #ccc"
+      ></div>
+    </rich-textarea>
+    <button aria-label="Send message">Send</button>
+    <div id="conversation"></div>
+
+    <script>
+      // Simulates Gemini's own real behavior, verified against the saved snapshot.
+      const composeBox = document.querySelector('[role="textbox"]');
+      const sendButton = document.querySelector('[aria-label="Send message"]');
+      const conversation = document.getElementById("conversation");
+
+      function send() {
+        const userQuery = document.createElement("user-query-content");
+        userQuery.textContent = composeBox.textContent;
+        conversation.appendChild(userQuery);
+        composeBox.textContent = "";
+      }
+
+      sendButton.addEventListener("click", send);
+      composeBox.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          send();
+        }
+      });
+
+      window.simulateAiResponse = function (text) {
+        const modelResponse = document.createElement("model-response-content");
+        const messageContent = document.createElement("message-content");
+        messageContent.textContent = text;
+        modelResponse.appendChild(messageContent);
+        conversation.appendChild(modelResponse);
+      };
+    </script>
+  </body>
+</html>

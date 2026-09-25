@@ -243,6 +243,27 @@ observed test failure caught before it shipped. Future adapters (PR 9+) use the 
   is a small, isolated addition. Split into two PRs instead if either site's DOM turns out to
   need materially more adapter-specific logic than expected.
 
+**Delivered.** The owner supplied a real, saved Claude.ai conversation snapshot and a real, saved
+Gemini conversation snapshot, used to verify every selector in `src/adapters/claude.ts` and
+`src/adapters/gemini.ts` the same way as PR 8's ChatGPT adapter — including each account's real
+sidebar chat history (both sites) and, for the Gemini snapshot, the account's real email address
+in its account menu, none of which are reproduced anywhere in the repo.
+
+Both turned out simpler than ChatGPT in one respect: neither site's send button has ChatGPT's
+"doesn't exist until there's text" gap — Claude.ai's stays present at all times (state toggled via
+attributes, not by adding/removing the node) and Gemini's likewise appears already present in the
+saved snapshot. Both adapters still resolve it via a getter (matching `chatgpt.ts`'s pattern) since
+that costs nothing and doesn't assume more about the button's mount behavior than the snapshot
+actually verified.
+
+Claude.ai's selectors are `data-testid` attributes (`chat-input`, `chat-input-send`, and the
+distinct `user-message`/`assistant-message` pair) — the cleanest, most stable selectors of any
+adapter so far. Gemini's are a mix of accessible-name selectors for the compose box and send
+button (`[role="textbox"][aria-label="Enter a prompt for Gemini"]`,
+`button[aria-label="Send message"]`) and its `<message-content>` custom element for the response,
+verified distinct from its `<user-query-content>` element for the person's own sent message - the
+same response/sent-message distinction PR 7 and PR 8 required, confirmed again on a third site.
+
 ### PR 10 — Copilot web + Character.AI + Perplexity adapters
 
 - Same pattern, remaining sites from CLAUDE.md's example list. Split further if warranted.
