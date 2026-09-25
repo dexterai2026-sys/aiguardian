@@ -1,13 +1,61 @@
 /**
- * The review panel shown when a send is intercepted (see sendInterceptor.ts). Inserted in
- * normal document flow immediately after the compose box - not a floating/absolutely-positioned
- * overlay like highlightOverlay.ts - both because it's simpler and more robust (no positioning
- * math to get wrong), and because CLAUDE.md's "visible, never covert" principle is best served
- * by something that visibly pushes the page's own layout, not a subtle floating box easy to miss.
+ * Review panels shown when a send or file upload is intercepted (see sendInterceptor.ts and
+ * fileUploadInterceptor.ts). Inserted in normal document flow immediately after the intercepted
+ * element - not a floating/absolutely-positioned overlay like highlightOverlay.ts - both because
+ * it's simpler and more robust (no positioning math to get wrong), and because CLAUDE.md's
+ * "visible, never covert" principle is best served by something that visibly pushes the page's
+ * own layout, not a subtle floating box easy to miss.
  */
 export interface InterceptionPanel {
   element: HTMLElement;
   remove(): void;
+}
+
+interface PanelAction {
+  label: string;
+  className: string;
+  onClick: () => void;
+}
+
+function createPanelShell(
+  ownerDocument: Document,
+  panelClassName: string,
+  heading: string,
+  bodyText: string,
+  bodyClassName: string,
+  actions: PanelAction[],
+): InterceptionPanel {
+  const panel = ownerDocument.createElement("div");
+  panel.className = panelClassName;
+
+  const headingElement = ownerDocument.createElement("p");
+  headingElement.textContent = heading;
+  panel.appendChild(headingElement);
+
+  const body = ownerDocument.createElement("pre");
+  body.className = bodyClassName;
+  body.textContent = bodyText;
+  panel.appendChild(body);
+
+  const actionsElement = ownerDocument.createElement("div");
+  actionsElement.className = "guardian-interception-actions";
+  panel.appendChild(actionsElement);
+
+  for (const action of actions) {
+    const button = ownerDocument.createElement("button");
+    button.type = "button";
+    button.textContent = action.label;
+    button.className = action.className;
+    button.addEventListener("click", action.onClick);
+    actionsElement.appendChild(button);
+  }
+
+  return {
+    element: panel,
+    remove(): void {
+      panel.remove();
+    },
+  };
 }
 
 export interface InterceptionPanelCallbacks {
@@ -16,48 +64,66 @@ export interface InterceptionPanelCallbacks {
   onSendAnyway(): void;
 }
 
+/** The text-send review panel: masked preview, plus mask/edit/send-anyway (PR 5). */
 export function createInterceptionPanel(
   ownerDocument: Document,
   maskedPreview: string,
   callbacks: InterceptionPanelCallbacks,
 ): InterceptionPanel {
-  const panel = ownerDocument.createElement("div");
-  panel.className = "guardian-interception-panel";
+  return createPanelShell(
+    ownerDocument,
+    "guardian-interception-panel",
+    "Guardian found personal info or a security risk in this message. Here's what it would look like masked:",
+    maskedPreview,
+    "guardian-interception-preview",
+    [
+      {
+        label: "Send masked",
+        className: "guardian-btn-send-masked",
+        onClick: callbacks.onSendMasked,
+      },
+      { label: "Edit", className: "guardian-btn-edit", onClick: callbacks.onEdit },
+      {
+        label: "Send anyway",
+        className: "guardian-btn-send-anyway",
+        onClick: callbacks.onSendAnyway,
+      },
+    ],
+  );
+}
 
-  const heading = ownerDocument.createElement("p");
-  heading.textContent = "Guardian found personal info or a security risk in this message.";
-  panel.appendChild(heading);
+export interface FileWarningPanelCallbacks {
+  onCancelUpload(): void;
+  onUploadAnyway(): void;
+}
 
-  const previewLabel = ownerDocument.createElement("p");
-  previewLabel.textContent = "Here's what it would look like masked:";
-  panel.appendChild(previewLabel);
-
-  const preview = ownerDocument.createElement("pre");
-  preview.className = "guardian-interception-preview";
-  preview.textContent = maskedPreview;
-  panel.appendChild(preview);
-
-  const actions = ownerDocument.createElement("div");
-  actions.className = "guardian-interception-actions";
-  panel.appendChild(actions);
-
-  function addButton(label: string, className: string, onClick: () => void): void {
-    const button = ownerDocument.createElement("button");
-    button.type = "button";
-    button.textContent = label;
-    button.className = className;
-    button.addEventListener("click", onClick);
-    actions.appendChild(button);
-  }
-
-  addButton("Send masked", "guardian-btn-send-masked", callbacks.onSendMasked);
-  addButton("Edit", "guardian-btn-edit", callbacks.onEdit);
-  addButton("Send anyway", "guardian-btn-send-anyway", callbacks.onSendAnyway);
-
-  return {
-    element: panel,
-    remove(): void {
-      panel.remove();
-    },
-  };
+/**
+ * The file-upload review panel (PR 6): unlike a text message, an opaque file's content can't be
+ * masked in place, so the only real choices are to cancel the upload or proceed with it
+ * unchanged - a plain two-action panel, not a relabeled copy of the text one.
+ */
+export function createFileWarningPanel(
+  ownerDocument: Document,
+  summary: string,
+  callbacks: FileWarningPanelCallbacks,
+): InterceptionPanel {
+  return createPanelShell(
+    ownerDocument,
+    "guardian-file-warning-panel",
+    "Guardian found personal info or a security risk in a file you're about to upload:",
+    summary,
+    "guardian-file-warning-summary",
+    [
+      {
+        label: "Cancel upload",
+        className: "guardian-btn-cancel-upload",
+        onClick: callbacks.onCancelUpload,
+      },
+      {
+        label: "Upload anyway",
+        className: "guardian-btn-upload-anyway",
+        onClick: callbacks.onUploadAnyway,
+      },
+    ],
+  );
 }

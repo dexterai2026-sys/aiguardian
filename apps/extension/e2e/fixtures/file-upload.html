@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guardian file-upload fixture</title>
+  </head>
+  <body>
+    <div>
+      <!-- A compose box is present too, since the real content script only attaches its file-upload
+           interceptor as part of generic-fallback.ts, alongside (not instead of) send interception. -->
+      <textarea id="compose" style="width: 600px; height: 100px"></textarea>
+      <input type="file" id="upload" />
+    </div>
+    <div id="upload-log"></div>
+
+    <script>
+      // Simulates a real AI site's own upload handling: reacts to the file input's "change" event
+      // by recording the selected file names, same shape as a real site reading input.files.
+      const upload = document.getElementById("upload");
+      const log = document.getElementById("upload-log");
+
+      upload.addEventListener("change", () => {
+        const li = document.createElement("p");
+        li.className = "uploaded-files";
+        li.textContent = Array.from(upload.files)
+          .map((file) => file.name)
+          .join(", ");
+        log.appendChild(li);
+      });
+    </script>
+  </body>
+</html>
