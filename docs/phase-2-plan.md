@@ -1,0 +1,275 @@
+# Phase 2 Plan: Browser Extension (Personal Mode + Client-Only Family Scaffolding)
+
+Source: `CLAUDE.md` roadmap, Phase 2 — "Browser extension (personal mode first, then family
+hooks)", and the "Browser extension" component section. This document breaks that phase into
+small, PR-sized tasks, following the same approach as `docs/phase-1-plan.md`. No code is written
+as part of this plan; each task below becomes its own pull request when implemented.
+
+## Goal
+
+By the end of Phase 2:
+
+- `/apps/extension` is a Manifest V3 extension (TypeScript, Vite build) that runs on Chrome, Edge,
+  and Brave, loadable unpacked for local testing (the owner's workflow — see CLAUDE.md's
+  Development environment section).
+- **Personal mode is complete**: real-time highlighting, send interception (mask/edit/send
+  anyway), paste and file-upload scanning, response restore, a hidden-injection page scanner, AI
+  site allow/block, usage stats, and a visible "protection active" indicator — all backed by
+  `@guardian/engine-ts` from Phase 1, running entirely on-device.
+- Site adapters exist for ChatGPT, Claude.ai, Gemini, Copilot web, Character.AI, and Perplexity,
+  plus a generic fallback for any other chat-style text box, per CLAUDE.md.
+- **Family mode is client-only scaffolding**, per the scope decision below: a local mode toggle,
+  a local (device-only, not synced) encrypted vault, and in-UI response flagging. No pairing, no
+  alerts, no parent dashboard — those need Phase 3's backend and are explicitly deferred.
+- CI builds the extension and runs Playwright e2e tests against it (per CLAUDE.md's testing
+  conventions), on every PR.
+
+## Scope boundary: family mode without a backend (owner decision)
+
+Phase 3 (not started) is what makes family mode real: pairing, policy sync, category-only alerts
+to a parent, and genuine end-to-end vault encryption with a family passphrase the server never
+sees. None of that exists yet. Rather than defer all family-mode work to Phase 3 (which would
+make Phase 2 personal-mode-only) or half-build it against a fake backend, the owner chose:
+build the **client-only** pieces now (mode toggle, a local encrypted vault, in-UI response
+flagging) with **no** pairing, alerts, or sync — those remain Phase 3 work, and the local vault
+built here should be expected to be reworked (not necessarily reused as-is) once real backend
+sync exists. This is a deliberate scope choice, not an oversight — record it in an ADR (PR 14).
+
+Heartbeats are **not** part of Phase 2: CLAUDE.md defines them as "protection active" reports to
+a parent dashboard, which requires the Phase 3 backend to receive and act on them. Building a
+heartbeat sender with nothing listening isn't useful scaffolding, unlike the vault/toggle/flagging
+above, which are independently useful in personal-mode-adjacent testing today.
+
+## Constraints carried over from CLAUDE.md
+
+- **Detection stays on-device.** The extension calls `@guardian/engine-ts`'s `detect`/`mask`/
+  `restore` locally; no prompt/response/pasted text is ever sent anywhere, including to any
+  telemetry.
+- **Visible, never covert**: every surface (highlight, modal, badge) must be visible to the
+  person using the browser. Personal mode reports to no one.
+- **Never inspect password fields**, incognito/no-personalized-learning-flagged fields, or
+  payment fields outside AI contexts.
+- **No third-party analytics or ad SDKs.** Crash reporting (if any) is opt-in and scrubbed of
+  user text.
+- **Minimal permissions**, for both the non-negotiable data-minimization principle and Chrome Web
+  Store / Edge Add-ons review (CLAUDE.md's Distribution notes).
+- **Ask before adding a dependency**, changing the category enum, or touching a privacy
+  principle. Several tasks below flag a likely new dependency (a Vite MV3 plugin, `@types/chrome`,
+  `@playwright/test`) as an approval checkpoint, not a pre-approval.
+- **Site adapters will break** when AI sites change layout — CLAUDE.md requires them isolated,
+  small, and covered by fixture-based tests (saved DOM snapshots, not live network calls) so
+  breakage is easy to localize.
+- Every change ships with tests (Vitest for logic, Playwright for anything that needs a real
+  loaded extension and page).
+
+## Sequencing
+
+| #   | PR                                                         | Depends on |
+| --- | ---------------------------------------------------------- | ---------- |
+| 0   | Extension scaffolding & build tooling                      | —          |
+| 1   | Playwright e2e harness + CI                                | 0          |
+| 2   | Engine integration                                         | 1          |
+| 3   | Generic fallback: detection wiring                         | 2          |
+| 4   | Real-time highlighting UI                                  | 3          |
+| 5   | Send interception (mask/edit/send anyway)                  | 4          |
+| 6   | Paste and file-upload scanning                             | 5          |
+| 7   | Response restore                                           | 5          |
+| 8   | Site adapter framework + ChatGPT adapter                   | 4, 5       |
+| 9   | Claude.ai + Gemini adapters                                | 8          |
+| 10  | Copilot web + Character.AI + Perplexity adapters           | 8          |
+| 11  | Hidden-injection page scanner                              | 2          |
+| 12  | AI site allow/block + visible protection indicator         | 1          |
+| 13  | Local usage stats                                          | 3          |
+| 14  | Local family-mode scaffolding (toggle, age profile, vault) | 2          |
+| 15  | Family-mode response flagging in UI                        | 7, 14      |
+| 16  | Store readiness                                            | all above  |
+
+## Detailed tasks
+
+### PR 0 — Extension scaffolding & build tooling
+
+- Create `/apps/extension` with `package.json`, `tsconfig.json` (extends the root base config),
+  and a Vite config targeting Manifest V3.
+- **Dependency decision needed**: a Vite-to-MV3 plugin (e.g. `@crxjs/vite-plugin` or
+  `vite-plugin-web-extension`) to handle manifest-driven multi-entry builds (background service
+  worker, content scripts, popup, options page) — evaluate both for MV3 support and maintenance
+  status before picking. Also add `@types/chrome` for typed `chrome.*` APIs.
+- `manifest.json` (v3) skeleton: name, description, minimal initial permissions (`storage`,
+  `activeTab`), no host permissions yet (added per-feature in later PRs, kept as narrow as each
+  feature actually needs — not a blanket `<all_urls>` grant this early).
+- Background service worker stub, popup stub (placeholder UI), options page stub.
+- `pnpm build` produces an unpacked `dist/` directory; document loading it unpacked in Chrome
+  (README section, matching the owner's actual testing workflow per CLAUDE.md).
+- No detection logic yet.
+
+### PR 1 — Playwright e2e harness + CI
+
+- Add `@playwright/test` to `/apps/extension`. Set up `launchPersistentContext` loading the built
+  unpacked extension (MV3 extensions need a persistent context, not `browser.newPage()`).
+- **Verify empirically** whether headless Chromium (`--headless=new`) can load an MV3 extension
+  in this environment, or whether CI needs a virtual display (e.g. `xvfb`) — record the answer
+  and the working config, since this blocks every later e2e test in this phase.
+- One smoke test: the extension loads, the background service worker registers, the popup opens
+  and renders. No feature logic yet.
+- Add a GitHub Actions job (or extend `.github/workflows/ci.yml`) building `/apps/extension` and
+  running its Playwright suite, using the pre-installed Chromium the session's own CI runner
+  provides where possible.
+
+### PR 2 — Engine integration
+
+- Add `@guardian/engine-ts` as a workspace dependency of `/apps/extension`.
+- Confirm the Vite build correctly bundles the cross-package rule JSON imports flagged as a risk
+  in `docs/adr/0001-rule-and-corpus-data-format.md` ("if Phase 2 adds a build step, must
+  special-case rootDir/outDir or continue leaning on a bundler") — Vite should handle this
+  natively as a JSON asset, but this PR is where that assumption gets proven, not assumed.
+- One Playwright test: a content script calls `detect()` on a static string inside a real loaded
+  page context and produces the expected finding — proves the whole pipeline (bundler → content
+  script → engine) works before any real feature is built on top of it.
+
+### PR 3 — Generic fallback: detection wiring
+
+- A content script matching a broad-but-documented set of pages (start with a small
+  manually-curated list of known AI sites from `/rules/ai-domains.json`, not `<all_urls>`, to
+  keep permissions minimal — the "generic fallback" is about _UI pattern_ recognition on AI
+  sites, not running on every page on the internet).
+- Heuristic to find the chat-style compose box (large `<textarea>` or `contenteditable` element
+  near a send-shaped button).
+- Wire `detect()` (personal mode: `context.mode: "personal"`, no vault yet) to the compose box's
+  input, debounced (CLAUDE.md: "must never make typing feel slow").
+- No visible UI yet — this PR proves detection runs correctly against real typed input (unit +
+  Playwright tests), decoupled from the rendering work in PR 4.
+
+### PR 4 — Real-time highlighting UI
+
+- Render findings visually over the compose box. `<textarea>` can't hold rich inline styling, so
+  use a mirrored-overlay technique (an absolutely-positioned div replicating the textarea's text
+  and font metrics, with highlighted spans, layered behind/over the real input) — a well-known
+  pattern for this problem; `contenteditable` boxes can use native inline styling instead.
+  **Implementation detail to nail down in this PR**, not assumed here.
+- Tooltip or inline label showing the category on hover/focus (still without exposing masked
+  content anywhere in code, logs, etc. — only the categorized label).
+- Fixture-based tests: a saved static HTML page with a known compose-box shape, verifying
+  highlight positions match finding offsets.
+
+### PR 5 — Send interception (mask/edit/send anyway)
+
+- Intercept the send action (Enter key and/or send button click) when findings exist.
+- Modal/panel: shows the masked preview (`mask()`'s output), with options to send masked, go back
+  and edit, or send the original text anyway (never blocks the user outright — CLAUDE.md's
+  approach is "protect and teach," not restrict).
+- Keep `restoreMap` in memory only for that tab/conversation, per CLAUDE.md — never write it to
+  `chrome.storage` or send it anywhere.
+
+### PR 6 — Paste and file-upload scanning
+
+- Intercept `paste` events into the compose box; run the same detect/highlight/intercept path on
+  pasted content before it lands in the box (or immediately after, re-scanning).
+- For file uploads (drag-drop or `<input type="file">` into the AI site's own uploader): read
+  text-based file content client-side (`FileReader`) and scan it the same way before the file is
+  handed to the page, where feasible without breaking the site's own upload flow. Document any
+  site where this isn't feasible (e.g. the site reads the file via a mechanism the content script
+  can't intercept) as a known gap rather than silently skipping it.
+
+### PR 7 — Response restore
+
+- After the AI responds, scan the rendered response DOM for placeholder tokens
+  (`[CATEGORY_N]`-shaped text) that match keys in the tab's current `restoreMap`.
+- Replace them for on-screen display only (a rendering-layer substitution, not a DOM/storage
+  mutation that could leak back into the page's own state or network requests) — since the AI
+  itself only ever saw the masked text, this is purely a display convenience for the user who
+  sent the masked version and now sees the AI's reply reference "\[EMAIL_1]" literally.
+- Only ever restores within the same tab/session `restoreMap` — a placeholder-shaped string with
+  no matching key (e.g. the AI hallucinated one, or it's a different conversation) is left as-is.
+
+### PR 8 — Site adapter framework + ChatGPT adapter
+
+- Define the adapter interface: selectors/heuristics for the compose box, send control, and
+  response container, plus a capability flag set (e.g. "supports file upload interception: yes/
+  no") so adapters can differ in what they support.
+- Adapters take precedence over the generic fallback on their matched site.
+- ChatGPT adapter, with fixture-based tests: a saved snapshot of ChatGPT's DOM structure (not a
+  live network call — CLAUDE.md requires adapters be tested in isolation so breakage is
+  localized and doesn't depend on ChatGPT staying up or unchanged).
+
+### PR 9 — Claude.ai + Gemini adapters
+
+- Same pattern as PR 8, one PR covering both since the adapter framework already exists and each
+  is a small, isolated addition. Split into two PRs instead if either site's DOM turns out to
+  need materially more adapter-specific logic than expected.
+
+### PR 10 — Copilot web + Character.AI + Perplexity adapters
+
+- Same pattern, remaining sites from CLAUDE.md's example list. Split further if warranted.
+
+### PR 11 — Hidden-injection page scanner
+
+- Distinct from compose-box detection: scans the **visible page** (e.g. a webpage or document the
+  user is about to copy text from) for content hidden from human view but potentially read by an
+  AI if pasted — CSS-hidden elements (`display: none`, `visibility: hidden`, zero-size,
+  off-screen positioning), tiny/invisible-color text, in addition to the zero-width/bidi
+  characters `injection.hidden_text` already catches in plain extracted text.
+- Surface a warning (visible indicator) before/if the user copies such content, without silently
+  stripping anything — the person decides what to do with the warning.
+
+### PR 12 — AI site allow/block + visible protection indicator
+
+- Popup/options UI listing known AI sites (from `/rules/ai-domains.json`) with a per-site
+  enable/disable toggle, enforced via `declarativeNetRequest` rules generated from that data.
+  This is a **self-directed, personal-mode** control in Phase 2 (a person blocking a site for
+  themselves) — parent-set blocking policy is Phase 3, once policies can sync from a backend.
+- Toolbar icon state + an on-page indicator (e.g. a small badge near the compose box) showing
+  protection is active, per the "visible, never covert" principle.
+- Detect Edge/Brave and show a one-time notice that built-in browser AI sidebars (Copilot in
+  Edge, Brave Leo) are not covered by content-script-based detection, per CLAUDE.md.
+
+### PR 13 — Local usage stats
+
+- Local-only counters (per site, per category) of findings/masks over time, shown in the popup.
+  Never transmitted anywhere (data-minimization principle) — stored in `chrome.storage.local`,
+  with a manual "clear stats" control.
+
+### PR 14 — Local family-mode scaffolding
+
+- A mode toggle (personal/family) and age-profile setting, stored locally (`chrome.storage.local`
+  or `.sync` — decide based on whether "sync across the person's own signed-in Chrome profile" is
+  desired even without a backend; default to `.local` to avoid any cross-device data movement
+  until Phase 3's real sync exists).
+- A **local, device-only encrypted vault** UI (add/edit/remove registered values feeding
+  `VaultEntry[]`): encrypted at rest with a locally-set passphrase via WebCrypto (Argon2id/PBKDF2
+  - AES-GCM, mirroring the approach CLAUDE.md already specifies for the Phase 3 dashboard's vault
+    crypto), even though nothing is synced — the non-negotiable vault-encryption principle applies
+    to protecting the data at rest, not just in transit to a server that doesn't exist yet. No new
+    dependency expected (WebCrypto is a browser built-in).
+- Record this scope choice — and that this vault is expected to be reworked, not necessarily
+  reused as-is, once Phase 3 adds real backend sync — as an ADR in `docs/adr/`.
+
+### PR 15 — Family-mode response flagging in UI
+
+- When family mode is on (from PR 14), run `detect()` on the AI's response text with
+  `context.mode: "family"` (activating `content.*` categories) and the local vault from PR 14.
+- Visually flag matched spans in the rendered response (reusing PR 4's highlighting approach).
+  **No alert is sent anywhere** — there is no parent, backend, or dashboard to send one to yet;
+  this is strictly an in-the-moment, on-device signal to whoever is at the keyboard, consistent
+  with personal mode's existing behavior. Document this limitation directly in the UI copy so it
+  isn't misread as "a parent was notified."
+
+### PR 16 — Store readiness
+
+- Audit final manifest permissions against what's actually used; narrow anywhere possible.
+- Privacy disclosure text (what the extension does and doesn't collect/transmit — should be easy
+  to write accurately given the on-device-only architecture), single-purpose description, icons,
+  and store listing copy for Chrome Web Store and Edge Add-ons, per CLAUDE.md's Distribution
+  notes.
+- Not a code-heavy PR; mostly config, copy, and assets.
+
+## Open questions for the owner (surface at the relevant PR, not all at once)
+
+- Vite MV3 plugin choice: `@crxjs/vite-plugin` vs `vite-plugin-web-extension` vs a manual
+  multi-entry config (PR 0).
+- Whether headless Chromium can load an MV3 extension in this environment for CI, or whether a
+  virtual display is needed (PR 1).
+- The compose-box highlighting technique for `<textarea>` elements (mirrored overlay vs an
+  alternative) (PR 4).
+- Whether local family-mode settings use `chrome.storage.local` or `.sync` (PR 14).
+- Whether any additional AI sites beyond CLAUDE.md's example list should get a named adapter
+  before Phase 2 closes out (PRs 8–10).
