@@ -481,11 +481,16 @@ from inside this repo is done; see `docs/store-listing.md` for the full detail:
   set (honestly "not collected" across every category, since there's still no backend at all), and
   draft store-listing copy (short + detailed description) are written in `docs/store-listing.md`,
   ready for the owner's review before submission.
-- **Not attempted, needs the owner**: an icon set (`manifest.json` has no `icons` field, and there
-  are no image assets anywhere in `apps/extension` to add one from), screenshots for both stores,
-  support email/website URL for the listing forms, and the store developer accounts themselves
-  (Chrome Web Store, Microsoft Partner Center) — none of these can be fabricated or created from
-  this session.
+- **Icon set added** once the owner pointed to Lucide (lucide.dev, ISC-licensed) as a free icon
+  source: `public/icons/icon-{16,32,48,128}.png`, a shield-check glyph on a plain background, wired
+  into `manifest.json`'s `icons` and `action.default_icon`. `apps/extension/THIRD_PARTY_NOTICES.md`
+  carries Lucide's required copyright notice. This is a first-pass icon (legible down to 16px, not
+  a reviewed brand decision) - easy to regenerate differently before submission.
+- **Still not attempted, needs the owner**: a separate store-listing marketing/hero image (the
+  small toolbar icon doesn't satisfy either store's listing-page image requirements), screenshots
+  for both stores, support email/website URL for the listing forms, and the store developer
+  accounts themselves (Chrome Web Store, Microsoft Partner Center) — none of these can be
+  fabricated or created from this session.
 
 ## Open questions for the owner (surface at the relevant PR, not all at once)
 

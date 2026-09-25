@@ -3,8 +3,21 @@
 Chrome Web Store and Edge Add-ons both require a single-purpose description, a permission
 justification for every requested permission, a data-usage disclosure, and store-listing copy
 (descriptions, icons, screenshots) before a submission can go through review. This doc collects
-everything that can be written and verified from inside this repo. **Icons and screenshots are not
-included here** — see "What still needs the owner" at the end; nothing here should block on them.
+everything that can be written and verified from inside this repo. **Store-listing screenshots are
+not included here** — see "What still needs the owner" at the end; nothing here should block on
+them.
+
+## Icon
+
+`public/icons/icon-{16,32,48,128}.png`, wired into `manifest.json`'s `icons` and
+`action.default_icon`. A shield-check glyph adapted from
+[Lucide](https://lucide.dev)'s `shield-check.svg` (ISC-licensed — see
+`apps/extension/THIRD_PARTY_NOTICES.md` for the required copyright notice), on a plain indigo
+rounded-square background, rendered to each required size with a small script (not checked in —
+this is a static asset, not build tooling). This is a first-pass icon, not a final brand decision:
+it's easy to regenerate at a different color or with a different Lucide glyph if the owner wants
+something else before submission, and the store listing's separate marketing image (see below)
+still needs the owner regardless.
 
 ## Single purpose description
 
@@ -102,10 +115,11 @@ family mode currently does (there is no alerting/dashboard yet — PR 16 is Phas
 
 Not attempted here — these need real assets or a business decision, not something to fabricate:
 
-- **Icon set.** `manifest.json` currently has no `icons` field at all, and there are no image
-  assets anywhere in `apps/extension`. Both stores require at least a 128×128 PNG (Chrome also
-  wants 16/32/48px for the toolbar/extensions-page/favicon sizes); Edge Add-ons has its own size
-  requirements for the store listing image separately from the extension icon.
+- **Sign-off on the icon** above, or a different one — it's a reasonable first pass (a recognizable
+  shield glyph, legible down to 16px), not a reviewed brand decision.
+- **Store listing marketing image(s)** — separate from the extension icon itself, Edge Add-ons and
+  the Chrome Web Store's promotional tile both have their own size requirements for the listing
+  page's hero image, which a small toolbar icon doesn't satisfy on its own.
 - **Screenshots** for both store listings (Chrome Web Store requires at least one, 1280×800 or
   640×400).
 - **Support email / website URL** for both stores' developer/listing forms.
@@ -126,3 +140,5 @@ Not attempted here — these need real assets or a business decision, not someth
 - This file: single-purpose description, per-permission justifications, a data-usage disclosure
   answer set, and draft store-listing copy — everything the store review forms ask for that doesn't
   require an image asset or a business/account decision.
+- **A real icon set** (`public/icons/icon-{16,32,48,128}.png`), added once the owner pointed to
+  Lucide as a free, appropriately-licensed icon source — see "Icon" above.
