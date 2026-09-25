@@ -25,6 +25,14 @@ function pressEnter(target: HTMLElement): void {
   );
 }
 
+/** "Send masked" waits two animation frames before replaying the send (see sendInterceptor.ts's
+ * nextAnimationFrame) - tests exercising that replay need to wait past them too. */
+function waitForAnimationFrames(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
 describe("attachSendInterceptor", () => {
   it("lets Enter through untouched when there are no findings", () => {
     document.body.innerHTML = "<textarea id='compose'></textarea>";
@@ -58,7 +66,7 @@ describe("attachSendInterceptor", () => {
     );
   });
 
-  it('"Send masked" replaces the text, calls onMasked, removes the panel, and replays the send', () => {
+  it('"Send masked" replaces the text, calls onMasked, removes the panel, and replays the send', async () => {
     document.body.innerHTML = "<textarea id='compose'></textarea>";
     const composeBox = document.querySelector<HTMLTextAreaElement>("#compose")!;
     composeBox.value = "email jane@example.com";
@@ -76,6 +84,9 @@ describe("attachSendInterceptor", () => {
       emailFinding("email jane@example.com"),
     );
     expect(document.querySelector(".guardian-interception-panel")).toBeNull();
+
+    await waitForAnimationFrames();
+
     // The replayed Enter re-runs detectNow against the now-masked (finding-free) text, so it
     // proceeds straight through to the site's own handler rather than intercepting again.
     expect(siteHandler).toHaveBeenCalledTimes(1);

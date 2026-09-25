@@ -69,6 +69,25 @@ function setComposeBoxText(composeBox: HTMLElement, text: string): void {
 }
 
 /**
+ * Resolves after two animation frames - real-world testing on live chatgpt.com found that even
+ * `execCommand("insertText", ...)` wasn't enough on its own: a rich-text editor like ProseMirror
+ * reconciles DOM mutations it didn't originate itself (as ours technically didn't, despite going
+ * through the native insertText path) via its own MutationObserver-driven flush cycle, which isn't
+ * guaranteed to complete synchronously within the same call stack as execCommand. Replaying the
+ * send immediately after, in the same synchronous tick, can still race that flush and hit the
+ * editor's own (still un-masked) internal state. Two animation frames is the standard "wait for a
+ * full paint/observer-flush cycle" technique - cheap enough to be imperceptible to the person, but
+ * enough for a MutationObserver callback (which fires at the end of the current microtask queue,
+ * well before the next animation frame) to have definitely run at least once.
+ */
+function nextAnimationFrame(ownerDocument: Document): Promise<void> {
+  const view = ownerDocument.defaultView ?? window;
+  return new Promise((resolve) => {
+    view.requestAnimationFrame(() => view.requestAnimationFrame(() => resolve()));
+  });
+}
+
+/**
  * Wires up send interception on a compose box: pressing Enter (without Shift) or clicking its
  * send button, when there are findings, shows a review panel instead of letting the send
  * through. Never blocks sending outright - "Send anyway" always works - per CLAUDE.md's
@@ -132,7 +151,10 @@ export function attachSendInterceptor(options: SendInterceptorOptions): void {
         closePanel();
         setComposeBoxText(composeBox, maskedText);
         onMasked?.(restoreMap, findings);
-        replay(kind);
+        // Waits a couple of animation frames before replaying - see nextAnimationFrame's docs.
+        // Only needed here, not in onSendAnyway: that path replays the send with text that was
+        // never changed, so there's no editor-internal state to wait for.
+        void nextAnimationFrame(ownerDocument).then(() => replay(kind));
       },
       onEdit(): void {
         closePanel(); // no text change - the person edits the original manually and tries again
