@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { findComposeBox, readComposeBoxText } from "./findComposeBox.js";
+import { describe, expect, it, vi } from "vitest";
+import {
+  findComposeBox,
+  findComposeBoxWithFallback,
+  readComposeBoxText,
+} from "./findComposeBox.js";
 
 /** jsdom always returns a zero-size rect, so tests stub it per element to simulate real layout. */
 function stubRect(element: HTMLElement, width: number, height: number): void {
@@ -71,5 +75,40 @@ describe("readComposeBoxText", () => {
     document.body.innerHTML = '<div contenteditable="true">hello there</div>';
     const editable = document.querySelector<HTMLElement>("[contenteditable]")!;
     expect(readComposeBoxText(editable)).toBe("hello there");
+  });
+});
+
+describe("findComposeBoxWithFallback", () => {
+  it("returns the adapter's own result without ever calling the generic heuristic", () => {
+    document.body.innerHTML = '<textarea id="generic-candidate"></textarea>';
+    stubRect(document.querySelector("#generic-candidate")!, 600, 120);
+    const adapterBox = document.createElement("div");
+    document.body.appendChild(adapterBox);
+
+    expect(findComposeBoxWithFallback(() => adapterBox)).toBe(adapterBox);
+  });
+
+  it("falls back to the generic largest-visible-input heuristic when the adapter finds nothing", () => {
+    document.body.innerHTML = '<textarea id="fallback-candidate"></textarea>';
+    const fallbackCandidate = document.querySelector<HTMLElement>("#fallback-candidate")!;
+    stubRect(fallbackCandidate, 600, 120);
+
+    expect(findComposeBoxWithFallback(() => null)).toBe(fallbackCandidate);
+  });
+
+  it("returns null when neither the adapter nor the generic heuristic finds anything", () => {
+    document.body.innerHTML = "<div>nothing here</div>";
+    expect(findComposeBoxWithFallback(() => null)).toBeNull();
+  });
+
+  it("never calls the generic heuristic's DOM search when the adapter already found something", () => {
+    const adapterBox = document.createElement("div");
+    document.body.appendChild(adapterBox);
+    const querySelectorAllSpy = vi.spyOn(document, "querySelectorAll");
+
+    findComposeBoxWithFallback(() => adapterBox);
+
+    expect(querySelectorAllSpy).not.toHaveBeenCalled();
+    querySelectorAllSpy.mockRestore();
   });
 });

@@ -42,3 +42,20 @@ export function readComposeBoxText(element: HTMLElement): string {
   }
   return element.textContent ?? "";
 }
+
+/**
+ * Wraps a site adapter's precise `findComposeBox` (a fixed selector verified against that site's
+ * real DOM) with this module's own generic "largest visible textarea/contenteditable" heuristic as
+ * a fallback, tried only when the adapter's own selector doesn't match anything. Adapters break
+ * when a site changes its layout (CLAUDE.md says so explicitly), and until now that meant total,
+ * silent protection failure on that page - nothing else ever tried to find the compose box at all.
+ * A wrong pick from the generic heuristic is recoverable (detection/interception attaches to the
+ * wrong element, which is visible and correctable); finding nothing and attaching to nothing is
+ * not, so falling back here is the safer default for every adapter-covered site.
+ */
+export function findComposeBoxWithFallback(
+  findAdapterComposeBox: () => HTMLElement | null,
+  root: ParentNode = document,
+): HTMLElement | null {
+  return findAdapterComposeBox() ?? findComposeBox(root);
+}

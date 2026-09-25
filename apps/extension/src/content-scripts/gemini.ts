@@ -12,8 +12,9 @@ import { attachFamilyResponseFlagging } from "../lib/familyResponseFlagging.js";
 import { getFamilyContext } from "../lib/familyContext.js";
 import { attachFileUploadInterceptor } from "../lib/fileUploadInterceptor.js";
 import { isFixtureTarget } from "../lib/fixtureTarget.js";
+import { watchComposeBox } from "../lib/watchComposeBox.js";
 import { debounce } from "../lib/debounce.js";
-import { readComposeBoxText } from "../lib/findComposeBox.js";
+import { findComposeBoxWithFallback, readComposeBoxText } from "../lib/findComposeBox.js";
 import { createHighlightOverlay } from "../lib/highlightOverlay.js";
 import { createProtectionBadge } from "../lib/protectionBadge.js";
 import { attachResponseRestore } from "../lib/responseRestore.js";
@@ -97,10 +98,15 @@ function attach(composeBox: HTMLElement): void {
 // fixtures that share "http://localhost/*" across every content script (see lib/fixtureTarget.ts)
 // - real sites never trigger it.
 if (isFixtureTarget("gemini")) {
-  const composeBox = geminiAdapter.findComposeBox(document);
-  if (composeBox) {
-    attach(composeBox);
-  }
+  // watchComposeBox, not a one-time find-and-attach: Gemini is a single-page app, and starting a
+  // new conversation (or navigating between chats) can replace the compose box's own DOM node
+  // without a full page load - see lib/watchComposeBox.ts's file docs. findComposeBoxWithFallback
+  // falls back to the generic largest-text-input heuristic if Gemini ever changes its markup
+  // enough that the adapter's own selector stops matching, rather than finding nothing at all.
+  watchComposeBox(
+    () => findComposeBoxWithFallback(() => geminiAdapter.findComposeBox(document)),
+    attach,
+  );
 
   attachFileUploadInterceptor({
     root: document,

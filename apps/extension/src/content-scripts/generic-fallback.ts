@@ -26,6 +26,7 @@ import { createHighlightOverlay } from "../lib/highlightOverlay.js";
 import { createProtectionBadge } from "../lib/protectionBadge.js";
 import { attachSendInterceptor } from "../lib/sendInterceptor.js";
 import { recordFindingsShown, recordMasked } from "../lib/usageStats.js";
+import { watchComposeBox } from "../lib/watchComposeBox.js";
 
 const DEBOUNCE_MS = 300;
 
@@ -82,10 +83,10 @@ function attach(composeBox: HTMLElement): void {
 // purely a testing convenience for the fixtures that share "http://localhost/*" across every
 // content script (see lib/fixtureTarget.ts) - real sites never trigger it.
 if (isFixtureTarget("generic-fallback")) {
-  const composeBox = findComposeBox(document);
-  if (composeBox) {
-    attach(composeBox);
-  }
+  // watchComposeBox, not a one-time find-and-attach: every AI site this fallback covers is a
+  // single-page app, and starting a new conversation (or navigating between chats) can replace the
+  // compose box's own DOM node without a full page load - see lib/watchComposeBox.ts's file docs.
+  watchComposeBox(() => findComposeBox(document), attach);
 
   // File inputs aren't necessarily inside the compose box's own container, so this is attached
   // unconditionally rather than gated on a compose box being found.
