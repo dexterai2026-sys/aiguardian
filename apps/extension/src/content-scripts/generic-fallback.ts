@@ -1,10 +1,20 @@
-// Generic-fallback content script (docs/phase-2-plan.md, PRs 3-6): finds the chat-style compose
-// box on any matched AI site, runs Tier 1/2 detection against it as the person types, highlights
-// findings in place (lib/highlightOverlay.ts), and intercepts sending a message with findings
-// still present (lib/sendInterceptor.ts) to offer a masked alternative. Also scans text-like file
-// uploads before they reach the site (lib/fileUploadInterceptor.ts). Findings are also written to
-// a dataset attribute, same pattern as content-scripts/probe.ts, for tests to read. Per-site
-// adapters (PR 8+) take precedence over this on the sites they cover.
+// Generic-fallback content script (docs/phase-2-plan.md, PRs 3-6, partial 7): finds the
+// chat-style compose box on any matched AI site, runs Tier 1/2 detection against it as the person
+// types, highlights findings in place (lib/highlightOverlay.ts), and intercepts sending a message
+// with findings still present (lib/sendInterceptor.ts) to offer a masked alternative. Also scans
+// text-like file uploads before they reach the site (lib/fileUploadInterceptor.ts). Findings are
+// also written to a dataset attribute, same pattern as content-scripts/probe.ts, for tests to
+// read. Per-site adapters (PR 8+) take precedence over this on the sites they cover.
+//
+// lib/responseRestore.ts (PR 7) is deliberately NOT wired in here: it needs a root scoped to just
+// the AI's own response container to be safe, and the generic fallback has no reliable way to
+// identify one - a real chat site typically re-renders the person's own just-sent message as a
+// bubble too, and without adapter knowledge of the DOM this script cannot tell that bubble apart
+// from the AI's reply. Restoring inside the person's own "sent" bubble would be a real bug, not a
+// convenience: it would visibly undo the masking they just chose, on their own screen, which is
+// exactly the protection "Send masked" is supposed to provide against anyone looking at that
+// screen. Per-site adapters (PR 8+), which know their site's real response-container selector,
+// are the first safe callers of attachResponseRestore.
 import { detect } from "@guardian/engine-ts";
 import type { Context } from "@guardian/engine-ts";
 import { debounce } from "../lib/debounce.js";
@@ -51,7 +61,8 @@ function attach(composeBox: HTMLElement): void {
     setTimeout(() => runDetection(composeBox, overlay), 0);
   });
 
-  // onMasked (the resulting restoreMap) is unused until PR 7 (response restore) needs it.
+  // onMasked (the resulting restoreMap) is unused here - see the file-level comment on
+  // lib/responseRestore.ts above for why the generic fallback doesn't consume it yet.
   attachSendInterceptor({ composeBox, sendButton: findSendButton(composeBox), detectNow });
 }
 

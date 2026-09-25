@@ -181,6 +181,20 @@ above, which are independently useful in personal-mode-adjacent testing today.
 - Only ever restores within the same tab/session `restoreMap` — a placeholder-shaped string with
   no matching key (e.g. the AI hallucinated one, or it's a different conversation) is left as-is.
 
+**Delivered, with a scope adjustment found during implementation:** `lib/responseRestore.ts` is
+built and unit-tested exactly as described above (given a root and a `restoreMap`, it restores
+placeholders in that root's text on mutation, excluding the compose box and Guardian's own UI).
+It is **not** wired into the generic-fallback content script. Doing so surfaced a real bug, not
+just a test failure: a typical chat site re-renders the person's own just-sent message as a
+bubble too, and the generic fallback has no adapter knowledge to tell that bubble apart from the
+AI's actual reply. Restoring inside the person's own "sent" bubble would visibly undo the masking
+they just chose, on their own screen — defeating exactly the protection "Send masked" is meant to
+provide against anyone looking at that screen (shoulder-surfing, screenshots, screen recording).
+A timing-based heuristic (assume anything rendered within N ms of sending is the echo) was
+considered and rejected as fragile guessing, inconsistent with this repo's adapter philosophy of
+correctness over guessed DOM behavior. Per-site adapters (PR 8+), which know their site's real
+response-container selector, are the first safe callers of `attachResponseRestore`.
+
 ### PR 8 — Site adapter framework + ChatGPT adapter
 
 - Define the adapter interface: selectors/heuristics for the compose box, send control, and
