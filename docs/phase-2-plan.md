@@ -277,6 +277,20 @@ simply don't get an adapter's more precise compose-box detection or response res
 happens. Revisit whenever real snapshots (an empty compose screen plus an active conversation, one
 per site) are available, pre- or post-launch; no code-level prerequisite blocks doing this later.
 
+**Partial Copilot snapshot received (2026-09-25), still not enough to build the adapter.** The
+owner provided one Copilot web page save, but it's an empty "new chat" screen with no message ever
+sent - the same problem PR 8's first ChatGPT snapshot had, which needed a second, active-
+conversation snapshot before an adapter could be built at all. From this one snapshot, only the
+compose box is verified: a `<span role="textbox" contenteditable="true">` with
+`id="m365-chat-editor-target-element"` and `aria-label="Message Copilot"`. Not yet verifiable from
+this snapshot alone: the send button (Copilot, like ChatGPT, appears to render no send control at
+all until the compose box has text - the same "actions" container is present but empty here) and
+the response-container selector that would need to reliably distinguish Copilot's own reply from
+the person's own echoed sent message (the exact distinction PR 7 depends on for response restore,
+and PR 15 depends on for family-mode response flagging). Asked the owner how to proceed given this
+gap; they chose to keep waiting for a second snapshot (with an active exchange) rather than ship a
+narrower compose-box-only adapter now. Character.AI and Perplexity remain fully unstarted.
+
 ### PR 11 — Hidden-injection page scanner
 
 - Distinct from compose-box detection: scans the **visible page** (e.g. a webpage or document the
