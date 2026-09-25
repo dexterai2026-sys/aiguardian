@@ -1,0 +1,19 @@
+{"id":"card-001","text":"Please charge my card 4111 1111 1111 1111 for the order.","expected":[{"category":"pii.payment_card","start":22,"end":41}],"notes":"valid test Visa number, luhn-valid, space-separated"}
+{"id":"card-002","text":"My card number is 4111-1111-1111-1111 and it expires in June.","expected":[{"category":"pii.payment_card","start":18,"end":37}],"notes":"valid test Visa number, luhn-valid, dash-separated"}
+{"id":"card-003","text":"Card: 4242424242424242 for the subscription please.","expected":[{"category":"pii.payment_card","start":6,"end":22}],"notes":"valid test Visa number, luhn-valid, no separators"}
+{"id":"card-neg-001","text":"My card number is 4111111111111112, please try again.","expected":[],"notes":"card-shaped digit run but fails luhn checksum (last digit altered)"}
+{"id":"card-neg-002","text":"Order number 1234567890123 was shipped yesterday.","expected":[],"notes":"13-digit order number, luhn-invalid, should not be flagged as a card"}
+{"id":"ssn-001","text":"My social security number is 123-45-6789, please update your records.","expected":[{"category":"pii.ssn","start":29,"end":40}],"notes":"basic SSN format"}
+{"id":"ssn-002","text":"For the form, use SSN 987-65-4320 as the identifier.","expected":[{"category":"pii.ssn","start":22,"end":33}],"notes":"basic SSN format, different context"}
+{"id":"ssn-neg-001","text":"The meeting moved to 03-15-2024 in the afternoon.","expected":[],"notes":"date-shaped, not SSN-shaped (2-2-4 digit groups, not 3-2-4)"}
+{"id":"ssn-neg-002","text":"Call the front desk, extension 123-4567 if you need help.","expected":[],"notes":"phone extension shaped as 3-4 digit groups, not SSN-shaped 3-2-4"}
+{"id":"phone-001","text":"You can reach the school office at (555) 123-4567 during business hours.","expected":[{"category":"pii.phone","start":35,"end":49}],"notes":"parenthesized area code with dash separator"}
+{"id":"phone-002","text":"Text me at 555-123-4567 when you land.","expected":[{"category":"pii.phone","start":11,"end":23}],"notes":"plain dash-separated NANP number"}
+{"id":"phone-003","text":"Mom's cell is +1 555.123.4567 in case of emergency.","expected":[{"category":"pii.phone","start":14,"end":29}],"notes":"country code prefix with dot separators"}
+{"id":"phone-neg-001","text":"Your tracking number is 1023456789, delivery expected Friday.","expected":[],"notes":"bare 10-digit run with no separators; phone pattern requires a separator by design to avoid matching arbitrary digit runs"}
+{"id":"phone-neg-002","text":"The recipe needs 555 grams of flour and 123 grams of sugar for 4567 calories total.","expected":[],"notes":"digits scattered across unrelated numbers, not phone-shaped"}
+{"id":"email-001","text":"Send the permission slip to jane.doe@example.com by Friday.","expected":[{"category":"pii.email","start":28,"end":48}],"notes":"standard email address"}
+{"id":"email-002","text":"You can also cc coach_smith+team@school-district.org on that email.","expected":[{"category":"pii.email","start":16,"end":52}],"notes":"email with plus-addressing and hyphenated domain"}
+{"id":"email-neg-001","text":"The event starts @ 3pm, see you there.","expected":[],"notes":"@ used conversationally, not part of an email address"}
+{"id":"multi-001","text":"Reach me at jane.doe@example.com or 555-123-4567, my card is 4242424242424242.","expected":[{"category":"pii.email","start":12,"end":32},{"category":"pii.phone","start":36,"end":48},{"category":"pii.payment_card","start":61,"end":77}],"notes":"three distinct categories in one message"}
+{"id":"multi-002","text":"Dad's SSN is 123-45-6789 and his email is dad@example.com for the school form.","expected":[{"category":"pii.ssn","start":13,"end":24},{"category":"pii.email","start":42,"end":57}],"notes":"two distinct categories, realistic parent/school context"}

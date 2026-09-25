@@ -1,11 +1,11 @@
 [
   {
     "category": "pii.payment_card",
-    "pattern": "\\b(?:\\d[ -]?){13,19}\\b",
+    "pattern": "\\b\\d(?:[ -]?\\d){12,18}\\b",
     "validation": "luhn",
     "confidence": 0.9,
     "placeholderPrefix": "CARD",
-    "description": "Digit sequences shaped like a card number; luhn validation narrows false positives."
+    "description": "Digit sequences shaped like a card number (13-19 digits, separators only between digits so a trailing space/dash after the number isn't swallowed); luhn validation narrows false positives."
   },
   {
     "category": "pii.ssn",
@@ -16,10 +16,10 @@
   },
   {
     "category": "pii.phone",
-    "pattern": "\\b(?:\\+?1[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}\\b",
+    "pattern": "(?<!\\d)(?:\\+?1[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]\\d{3}[-.\\s]\\d{4}(?!\\d)",
     "confidence": 0.75,
     "placeholderPrefix": "PHONE",
-    "description": "North American phone number formats. International formats are a follow-up (see docs/phase-1-plan.md open questions)."
+    "description": "North American phone number formats. Uses digit-adjacency lookarounds instead of \\b so a leading '(' or '+' isn't dropped from the match (\\b doesn't anchor before punctuation). Requires a separator between digit groups by design, so a bare unformatted 10-digit run (e.g. a tracking or order number) is not flagged. International formats are a follow-up (see docs/phase-1-plan.md open questions)."
   },
   {
     "category": "pii.email",
