@@ -1,10 +1,30 @@
+import { detectContentFlags } from "./detectors/contentFlags.js";
+import { detectInjection } from "./detectors/injection.js";
+import { detectPiiMisc } from "./detectors/piiMisc.js";
+import { detectSecrets } from "./detectors/secrets.js";
+import { detectStructuredPii } from "./detectors/structuredPii.js";
+import { detectVaultMatches } from "./detectors/vault.js";
+import { resolveOverlaps } from "./overlap.js";
 import type { Context, Finding } from "./types.js";
 
 /**
- * Runs all Tier 1 (pattern) and Tier 2 (vault) detectors against `text` and returns every
- * finding, already overlap-resolved. Not implemented yet — Phase 1 PRs 5-9 add the individual
- * detectors, and PR 11 wires them into this entry point.
+ * Runs every Tier 1 (pattern) and Tier 2 (vault) detector from PRs 5-9 against `text` and
+ * returns their combined findings, overlap-resolved (see overlap.ts) so callers never see two
+ * detectors' conflicting guesses about the same span.
+ *
+ * Family-only categories (content.*) are not gated here - detectContentFlags() already returns
+ * nothing outside `context.mode === "family"` (see PR 8), so this function stays a flat,
+ * unconditional fan-out rather than branching on mode itself.
  */
-export function detect(_text: string, _context: Context): Finding[] {
-  throw new Error("detect() is not implemented yet (see docs/phase-1-plan.md, PRs 5-11)");
+export function detect(text: string, context: Context): Finding[] {
+  const findings: Finding[] = [
+    ...detectStructuredPii(text),
+    ...detectPiiMisc(text),
+    ...detectSecrets(text),
+    ...detectInjection(text),
+    ...detectContentFlags(text, context),
+    ...detectVaultMatches(text, context.vault),
+  ];
+
+  return resolveOverlaps(findings);
 }

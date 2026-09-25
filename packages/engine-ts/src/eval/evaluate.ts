@@ -86,3 +86,33 @@ export function evaluateDetector(
 
   return { overall, byCategory };
 }
+
+function addStats(target: CategoryStats, source: CategoryStats): void {
+  target.truePositives += source.truePositives;
+  target.falsePositives += source.falsePositives;
+  target.falseNegatives += source.falseNegatives;
+}
+
+/**
+ * Combines several reports (e.g. one per corpus file, since `detect()` needs a different
+ * `Context` per corpus - see docs/phase-1-plan.md PR 11) into a single overall + per-category
+ * report, as if every case had been evaluated together.
+ */
+export function mergeReports(reports: EvalReport[]): EvalReport {
+  const overall = emptyStats();
+  const byCategory = new Map<Category, CategoryStats>();
+
+  for (const report of reports) {
+    addStats(overall, report.overall);
+    for (const [category, stats] of report.byCategory) {
+      const existing = byCategory.get(category);
+      if (existing) {
+        addStats(existing, stats);
+      } else {
+        byCategory.set(category, { ...stats });
+      }
+    }
+  }
+
+  return { overall, byCategory };
+}
