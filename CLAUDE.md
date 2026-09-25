@@ -159,16 +159,51 @@ Include hard negatives (text that looks like PII but is not), realistic kid and 
 
 ## Roadmap and current status
 
-| Phase | Scope                                                                  | Status          |
-| ----- | ---------------------------------------------------------------------- | --------------- |
-| 1     | Shared rules, test corpus, TypeScript engine (Tiers 1–2), CI           | **In progress** |
-| 2     | Browser extension (personal mode first, then family hooks)             | Not started     |
-| 3     | Backend + parent dashboard, pairing, alerts, heartbeats                | Not started     |
-| 4     | Android app (keyboard + DNS VPN), APK via GitHub Actions               | Not started     |
-| 5     | Desktop app (Windows, then macOS)                                      | Not started     |
-| 6     | Android accessibility (direct-download edition), ML tier, iOS research | Not started     |
+| Phase | Scope                                                                  | Status      |
+| ----- | ---------------------------------------------------------------------- | ----------- |
+| 1     | Shared rules, test corpus, TypeScript engine (Tiers 1–2), CI           | **Done**    |
+| 2     | Browser extension (personal mode first, then family hooks)             | Not started |
+| 3     | Backend + parent dashboard, pairing, alerts, heartbeats                | Not started |
+| 4     | Android app (keyboard + DNS VPN), APK via GitHub Actions               | Not started |
+| 5     | Desktop app (Windows, then macOS)                                      | Not started |
+| 6     | Android accessibility (direct-download edition), ML tier, iOS research | Not started |
 
 Update this table when phases start or finish.
+
+### Phase 1 close-out notes
+
+Delivered: `/rules` and `/test-corpus` (shared, engine-agnostic data), the TypeScript engine
+(`packages/engine-ts`) implementing `detect`/`mask`/`restore` across Tiers 1–2 for all 20
+categories, and CI (lint, format, typecheck, test, with the corpus quality gate built into the
+tests themselves). See `docs/phase-1-plan.md` for the PR-by-PR history and
+`packages/engine-ts/README.md` for the engine's own docs. Significant decisions are recorded as
+ADRs in `docs/adr/`.
+
+Known limitations and gaps, carried forward rather than silently dropped:
+
+- **`pii.name` and `pii.school` have no Tier 1 rule** - no regex makes sense for an arbitrary
+  name or school. They're only reachable via the personal vault (Tier 2), which reports them as
+  `vault.match` (see `docs/adr/0003-vault-match-category-and-fuzzy-matching.md`). If a future
+  phase needs to catch a child's name typed by someone who hasn't registered it in the vault,
+  that's Tier 3 (on-device ML), not a Tier 1 gap to fix here.
+- **Phone numbers are North America-only**, and require a separator between digit groups (a bare
+  10-digit run isn't flagged, to avoid matching arbitrary IDs/tracking numbers). International
+  support is deferred; see `docs/adr/0005-no-new-runtime-dependencies-in-phase-1.md`.
+- **Fuzzy vault matching is typo tolerance, not nickname handling** ("Jonathon" matches
+  "Jonathan"; "Jonny" does not). A registered-alias/nickname list would be a new feature, not a
+  tuning change - see `docs/adr/0003-vault-match-category-and-fuzzy-matching.md`.
+- **`pii.home_address`, `pii.dob`, `pii.government_id`, `pii.bank_account`, `pii.medical`,
+  `secret.password`, `injection.*`, and `content.*` are not held to the 0.95/0.90 quality
+  target** - only structured PII and `vault.match` are (CLAUDE.md's target is explicitly scoped
+  to structured PII). Real, documented false positives exist for `secret.password`,
+  `content.violence`, and `content.secrecy_from_parents` - see
+  `docs/adr/0004-quality-gate-scope.md` and each rule's `description` in `/rules/patterns/`.
+- **`injection.hidden_text` doesn't cover the Unicode Tags block** (an astral-plane "ASCII
+  smuggling" vector), and doesn't scan page DOM for CSS-hidden content - the latter is a Phase 2
+  extension concern, not this engine's.
+- **`detect()`'s <20ms latency target is tracked, not enforced** - CI/dev-container hardware
+  isn't the "mid-range device" the target describes (it currently runs in ~1ms there). Revisit
+  once real device numbers exist (Phase 2 extension, Phase 4 Android).
 
 ## Development environment
 

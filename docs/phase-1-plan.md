@@ -1,5 +1,9 @@
 # Phase 1 Plan: Shared Rules, Test Corpus, TypeScript Engine (Tiers 1–2), CI
 
+**Status: Complete** (PRs 0–13, all merged). See `CLAUDE.md`'s "Phase 1 close-out notes" for the
+delivered scope and known limitations, and `docs/adr/` for the significant decisions made along
+the way. This document is kept as the historical PR-by-PR record.
+
 Source: `CLAUDE.md` roadmap, Phase 1 — "Shared rules, test corpus, TypeScript engine (Tiers 1–2), CI".
 This document breaks that phase into small, PR-sized tasks. No code is written as part of this
 plan; each task below becomes its own pull request when implemented.
