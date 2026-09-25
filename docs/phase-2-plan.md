@@ -268,6 +268,15 @@ same response/sent-message distinction PR 7 and PR 8 required, confirmed again o
 
 - Same pattern, remaining sites from CLAUDE.md's example list. Split further if warranted.
 
+**Deferred (owner decision, 2026-09-25).** Blocked on the same real-DOM-snapshot requirement as
+PRs 8-9 (CLAUDE.md requires fixture-based adapter tests, not guessed markup) - no snapshots
+supplied yet for Copilot web, Character.AI, or Perplexity. Not a blocker for anything else: each of
+these three sites is currently served by the generic fallback (content-scripts/generic-fallback.ts)
+exactly as it was before PR 8 existed, so nothing regresses or needs rework by skipping ahead - they
+simply don't get an adapter's more precise compose-box detection or response restore until this PR
+happens. Revisit whenever real snapshots (an empty compose screen plus an active conversation, one
+per site) are available, pre- or post-launch; no code-level prerequisite blocks doing this later.
+
 ### PR 11 — Hidden-injection page scanner
 
 - Distinct from compose-box detection: scans the **visible page** (e.g. a webpage or document the
