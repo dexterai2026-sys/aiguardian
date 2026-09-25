@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-guardian-fixture-target="chatgpt">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guardian ChatGPT-adapter fixture</title>
+  </head>
+  <body>
+    <!-- Structure trimmed from two real, saved ChatGPT snapshots down to the attributes
+         adapters/chatgpt.ts's selectors key on - see that file's docs. The
+         `data-guardian-fixture-target` attribute above isn't part of ChatGPT's own markup; it only
+         tells every other content script to stay off this page in tests (see
+         lib/fixtureTarget.ts). -->
+    <form data-chatgpt-composer>
+      <div
+        contenteditable="true"
+        role="textbox"
+        aria-label="Ask ChatGPT"
+        class="ProseMirror"
+        style="width: 600px; min-height: 40px; border: 1px solid #ccc"
+      ></div>
+      <button type="button" aria-label="Dictate">Dictate</button>
+    </form>
+    <div id="conversation"></div>
+
+    <script>
+      // Simulates ChatGPT's own real behavior, verified against the saved snapshots: the Send
+      // button doesn't exist in the DOM at all until the compose box has content, and sending
+      // renders the person's own message as a `data-user-message-bubble` alongside (not instead
+      // of) whatever the AI replies with.
+      const composeBox = document.querySelector('[role="textbox"]');
+      const form = document.querySelector("form");
+      const conversation = document.getElementById("conversation");
+      let sendButton = null;
+
+      function updateSendButton() {
+        const hasText = composeBox.textContent.trim().length > 0;
+        if (hasText && !sendButton) {
+          sendButton = document.createElement("button");
+          sendButton.type = "submit";
+          sendButton.setAttribute("aria-label", "Send");
+          sendButton.textContent = "Send";
+          sendButton.addEventListener("click", onSend);
+          form.appendChild(sendButton);
+        } else if (!hasText && sendButton) {
+          sendButton.remove();
+          sendButton = null;
+        }
+      }
+
+      function onSend(event) {
+        event.preventDefault();
+        const bubble = document.createElement("div");
+        bubble.setAttribute("data-user-message-bubble", "true");
+        bubble.textContent = composeBox.textContent;
+        conversation.appendChild(bubble);
+        composeBox.textContent = "";
+        updateSendButton();
+      }
+
+      composeBox.addEventListener("input", updateSendButton);
+      composeBox.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          onSend(event);
+        }
+      });
+
+      window.simulateAiResponse = function (text) {
+        const response = document.createElement("div");
+        response.setAttribute("data-markdown-text-style", "assistant-message");
+        response.textContent = text;
+        conversation.appendChild(response);
+      };
+    </script>
+  </body>
+</html>

@@ -18,12 +18,21 @@ import type { RestoreMap } from "@guardian/engine-ts";
  * string before it's ever masked, and restoring it prematurely would be surprising and wrong),
  * and Guardian's own UI (the interception panel's masked-preview text is supposed to show the
  * placeholder, not the value it stands for - restoring it there would defeat its purpose).
+ *
+ * `responseContainerSelector` narrows restoration further, to text inside an element matching
+ * that selector - this is how a site adapter (see lib/siteAdapter.ts) safely scopes restoration to
+ * only the AI's own reply container, excluding the site's own re-rendering of what the person just
+ * sent, which `root` alone can't distinguish (see docs/phase-2-plan.md's PR 7 notes on why the
+ * generic fallback never passes this - it has no such selector to give). Left unset, restoration
+ * applies anywhere under `root` except the compose box and Guardian's own UI, as described above.
  */
 export interface ResponseRestoreOptions {
   root: Node;
   /** Never touched, even if it matches elsewhere in `root` (see file docs). */
   composeBox: Element;
   getRestoreMap: () => RestoreMap;
+  /** See file docs. When set, only text inside an element matching this selector is restored. */
+  responseContainerSelector?: string;
 }
 
 export interface ResponseRestoreHandle {
@@ -37,14 +46,19 @@ const PLACEHOLDER_PATTERN = /\[[A-Z0-9]+_\d+\]/g;
 const GUARDIAN_UI_SELECTOR = '[class*="guardian-"]';
 
 export function attachResponseRestore(options: ResponseRestoreOptions): ResponseRestoreHandle {
-  const { root, composeBox, getRestoreMap } = options;
+  const { root, composeBox, getRestoreMap, responseContainerSelector } = options;
 
   function isExcluded(textNode: Text): boolean {
     const element = textNode.parentElement;
     if (!element) {
       return false;
     }
-    return composeBox.contains(element) || element.closest(GUARDIAN_UI_SELECTOR) !== null;
+    if (composeBox.contains(element) || element.closest(GUARDIAN_UI_SELECTOR) !== null) {
+      return true;
+    }
+    return (
+      responseContainerSelector !== undefined && element.closest(responseContainerSelector) === null
+    );
   }
 
   function restore(textNode: Text): void {

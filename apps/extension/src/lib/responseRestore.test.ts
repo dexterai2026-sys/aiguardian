@@ -159,4 +159,31 @@ describe("attachResponseRestore", () => {
 
     expect(response.textContent).toBe("email jane@example.com");
   });
+
+  it("with a responseContainerSelector, restores only inside a matching container", async () => {
+    document.body.innerHTML = `
+      <textarea id="compose"></textarea>
+      <div class="user-message" id="echo"></div>
+      <div class="ai-response" id="response"></div>
+    `;
+    const composeBox = document.querySelector("#compose")!;
+    const echo = document.querySelector("#echo")!;
+    const response = document.querySelector("#response")!;
+    const restoreMap: RestoreMap = new Map([["[EMAIL_1]", "jane@example.com"]]);
+    handle = attachResponseRestore({
+      root: document.body,
+      composeBox,
+      getRestoreMap: () => restoreMap,
+      responseContainerSelector: ".ai-response",
+    });
+
+    // Simulates the site's own re-render of what the person just sent - must stay masked, since
+    // this is exactly the case lib/siteAdapter.ts's docs describe as unsafe to restore.
+    echo.textContent = "email [EMAIL_1]";
+    response.textContent = "email [EMAIL_1]";
+    await flush();
+
+    expect(echo.textContent).toBe("email [EMAIL_1]");
+    expect(response.textContent).toBe("email jane@example.com");
+  });
 });

@@ -205,6 +205,38 @@ response-container selector, are the first safe callers of `attachResponseRestor
   live network call — CLAUDE.md requires adapters be tested in isolation so breakage is
   localized and doesn't depend on ChatGPT staying up or unchanged).
 
+**Delivered.** The owner supplied two real, saved ChatGPT snapshots (an empty "new chat" screen
+and an active conversation with one exchange), used to verify every selector in
+`src/adapters/chatgpt.ts` rather than guessing — including the account's real conversation history
+and account/user IDs, none of which are reproduced anywhere in the repo; only the compose-box,
+send-button, and message-container structure was extracted, and further trimmed to just the
+attributes the adapter's selectors key on for `chatgpt.test.ts` and `e2e/fixtures/chatgpt.html`.
+
+Two real gaps surfaced and were fixed as part of this PR, not deferred:
+
+- ChatGPT's Send button doesn't exist in the DOM at all until the compose box has content (with it
+  empty, only "Dictate"/"Start Voice" render) — a button captured once at attach time, the way
+  `lib/sendInterceptor.ts` originally worked, would never see it. `sendInterceptor.ts`'s
+  `sendButton` option now also accepts a getter function, re-resolved on every click via
+  document-level delegation instead of a listener bound to one fixed element (still capture-phase,
+  so it keeps the same "wins the race against the site's own handler" guarantee). This is a
+  generalization, not a ChatGPT-only special case — any future adapter with the same shape of
+  problem can use it too.
+- The conversation snapshot confirmed the concern PR 7 raised: ChatGPT re-renders the person's own
+  sent message as a bubble (`[data-user-message-bubble]`) right alongside the AI's actual reply
+  (`[data-markdown-text-style="assistant-message"]`). Because these are two distinct, verified
+  selectors, the adapter can safely tell them apart — `lib/responseRestore.ts` gained an optional
+  `responseContainerSelector` to scope restoration to only the second one, and
+  `content-scripts/chatgpt.ts` is the first real caller, finally wiring in response restore for a
+  site where it's actually safe to do so.
+
+Also added `lib/fixtureTarget.ts`: a `data-guardian-fixture-target` attribute fixture pages set so
+that only the content script under test fully attaches to them. Needed once more than one content
+script could plausibly load on the same `http://localhost/*` fixture page (the generic fallback
+and now the ChatGPT adapter) — without it, `chatgpt.ts`'s unconditional file-upload interceptor was
+double-attaching alongside the generic fallback's own on every other fixture, which a real,
+observed test failure caught before it shipped. Future adapters (PR 9+) use the same convention.
+
 ### PR 9 — Claude.ai + Gemini adapters
 
 - Same pattern as PR 8, one PR covering both since the adapter framework already exists and each

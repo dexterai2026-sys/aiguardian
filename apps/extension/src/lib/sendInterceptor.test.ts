@@ -135,4 +135,34 @@ describe("attachSendInterceptor", () => {
     document.querySelector<HTMLButtonElement>(".guardian-btn-send-anyway")!.click();
     expect(siteHandler).toHaveBeenCalledTimes(1);
   });
+
+  it("intercepts clicks on a send button that doesn't exist yet at attach time, given a resolver function", () => {
+    // Mirrors ChatGPT (see adapters/chatgpt.ts): no send button in the DOM at all until the
+    // compose box has content - a fixed element captured once up front would never see it.
+    document.body.innerHTML = `<form><textarea id="compose"></textarea></form>`;
+    const composeBox = document.querySelector<HTMLTextAreaElement>("#compose")!;
+    const form = document.querySelector("form")!;
+
+    attachSendInterceptor({
+      composeBox,
+      sendButton: () => document.querySelector<HTMLButtonElement>("#send"),
+      detectNow: emailFinding,
+    });
+
+    composeBox.value = "email jane@example.com";
+    const sendButton = document.createElement("button");
+    sendButton.id = "send";
+    sendButton.type = "button";
+    form.appendChild(sendButton);
+    const siteHandler = vi.fn();
+    sendButton.addEventListener("click", siteHandler);
+
+    sendButton.click();
+
+    expect(siteHandler).not.toHaveBeenCalled();
+    expect(document.querySelector(".guardian-interception-panel")).not.toBeNull();
+
+    document.querySelector<HTMLButtonElement>(".guardian-btn-send-anyway")!.click();
+    expect(siteHandler).toHaveBeenCalledTimes(1);
+  });
 });

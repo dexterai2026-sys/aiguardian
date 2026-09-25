@@ -18,9 +18,11 @@
       "js": ["src/content-scripts/probe.ts"]
     },
     {
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*", "http://localhost/*"],
+      "js": ["src/content-scripts/chatgpt.ts"]
+    },
+    {
       "matches": [
-        "https://chat.openai.com/*",
-        "https://chatgpt.com/*",
         "https://claude.ai/*",
         "https://gemini.google.com/*",
         "https://copilot.microsoft.com/*",

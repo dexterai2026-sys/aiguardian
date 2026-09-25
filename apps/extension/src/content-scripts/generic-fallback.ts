@@ -19,6 +19,7 @@ import { detect } from "@guardian/engine-ts";
 import type { Context } from "@guardian/engine-ts";
 import { debounce } from "../lib/debounce.js";
 import { attachFileUploadInterceptor } from "../lib/fileUploadInterceptor.js";
+import { isFixtureTarget } from "../lib/fixtureTarget.js";
 import { findComposeBox, readComposeBoxText } from "../lib/findComposeBox.js";
 import { findSendButton } from "../lib/findSendButton.js";
 import { createHighlightOverlay } from "../lib/highlightOverlay.js";
@@ -66,11 +67,17 @@ function attach(composeBox: HTMLElement): void {
   attachSendInterceptor({ composeBox, sendButton: findSendButton(composeBox), detectNow });
 }
 
-const composeBox = findComposeBox(document);
-if (composeBox) {
-  attach(composeBox);
-}
+// In production, an adapter-covered site (e.g. chatgpt.com) is simply absent from this script's
+// manifest matches, so it never runs there at all - no runtime check needed. isFixtureTarget is
+// purely a testing convenience for the fixtures that share "http://localhost/*" across every
+// content script (see lib/fixtureTarget.ts) - real sites never trigger it.
+if (isFixtureTarget("generic-fallback")) {
+  const composeBox = findComposeBox(document);
+  if (composeBox) {
+    attach(composeBox);
+  }
 
-// File inputs aren't necessarily inside the compose box's own container, so this is attached
-// unconditionally rather than gated on a compose box being found.
-attachFileUploadInterceptor({ root: document, detect: detectNow });
+  // File inputs aren't necessarily inside the compose box's own container, so this is attached
+  // unconditionally rather than gated on a compose box being found.
+  attachFileUploadInterceptor({ root: document, detect: detectNow });
+}

@@ -5,7 +5,11 @@ import { createInterceptionPanel } from "./interceptionPanel.js";
 
 export interface SendInterceptorOptions {
   composeBox: HTMLElement;
-  sendButton: HTMLElement | null;
+  /** A fixed element, `null` if there's no send button to intercept clicks on, or a getter
+   * re-resolved on every click - needed for a site (e.g. ChatGPT, see adapters/chatgpt.ts) whose
+   * send button doesn't exist in the DOM at all until the compose box has content, so it can't be
+   * captured once up front the way a fixed element can. */
+  sendButton: HTMLElement | null | (() => HTMLElement | null);
   /** Runs detection fresh at interception time - never relies on stale/debounced findings. */
   detectNow: (text: string) => Finding[];
   /** Called after "Send masked" replaces the compose box's text, so a caller (PR 7: response
@@ -36,6 +40,9 @@ export function attachSendInterceptor(options: SendInterceptorOptions): void {
   const { composeBox, sendButton, detectNow, onMasked } = options;
   const ownerDocument = composeBox.ownerDocument;
 
+  const resolveSendButton: () => HTMLElement | null =
+    typeof sendButton === "function" ? sendButton : () => sendButton;
+
   let bypassNextEnter = false;
   let bypassNextClick = false;
   let activePanel: ReturnType<typeof createInterceptionPanel> | null = null;
@@ -56,9 +63,15 @@ export function attachSendInterceptor(options: SendInterceptorOptions): void {
           cancelable: true,
         }),
       );
-    } else if (sendButton) {
-      bypassNextClick = true;
-      sendButton.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    } else {
+      // Re-resolved rather than reusing whatever element intercept() saw: a site can re-render its
+      // send button between interception and this replay (e.g. ChatGPT's is a fresh DOM node any
+      // time the compose box's empty/non-empty state toggles).
+      const button = resolveSendButton();
+      if (button) {
+        bypassNextClick = true;
+        button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      }
     }
   }
 
@@ -114,9 +127,19 @@ export function attachSendInterceptor(options: SendInterceptorOptions): void {
     { capture: true },
   );
 
-  sendButton?.addEventListener(
+  // Delegated at the document level rather than bound to `sendButton` directly, so a button that
+  // doesn't exist yet at attach time (see the constructor's docs) is still caught once it renders
+  // and the person clicks it - re-resolved fresh on every click via resolveSendButton(), not
+  // captured once. A capture-phase listener on the document still fires before any listener on
+  // the button itself (bubble or capture), so this keeps the same "wins the race against the
+  // site's own handler" guarantee as attaching directly to a known element would.
+  ownerDocument.addEventListener(
     "click",
     (event) => {
+      const button = resolveSendButton();
+      if (!button || !(event.target instanceof Node) || !button.contains(event.target)) {
+        return;
+      }
       if (bypassNextClick) {
         bypassNextClick = false;
         return;
