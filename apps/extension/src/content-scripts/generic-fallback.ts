@@ -23,6 +23,7 @@ import { isFixtureTarget } from "../lib/fixtureTarget.js";
 import { findComposeBox, readComposeBoxText } from "../lib/findComposeBox.js";
 import { findSendButton } from "../lib/findSendButton.js";
 import { createHighlightOverlay } from "../lib/highlightOverlay.js";
+import { createLiveVault } from "../lib/liveVault.js";
 import { createProtectionBadge } from "../lib/protectionBadge.js";
 import { attachSendInterceptor } from "../lib/sendInterceptor.js";
 import { recordFindingsShown, recordMasked } from "../lib/usageStats.js";
@@ -30,15 +31,22 @@ import { watchComposeBox } from "../lib/watchComposeBox.js";
 
 const DEBOUNCE_MS = 300;
 
-const PERSONAL_CONTEXT: Context = {
-  appId: "generic-fallback",
-  siteId: location.hostname,
-  mode: "personal",
-  ageProfile: "adult",
-};
+// Vault matching (Tier 2) protects outgoing text in both personal and family mode - see
+// lib/liveVault.ts's docs for why this reads a background-refreshed snapshot rather than awaiting
+// storage on every keystroke. `mode` stays "personal" here deliberately: the family-only
+// content.* categories are about flagging the AI's own reply (lib/familyResponseFlagging.ts), not
+// the person's own outgoing text, so this doesn't change by mode.
+const getLiveVault = createLiveVault();
 
 function detectNow(text: string) {
-  return detect(text, PERSONAL_CONTEXT);
+  const context: Context = {
+    appId: "generic-fallback",
+    siteId: location.hostname,
+    mode: "personal",
+    ageProfile: "adult",
+    vault: getLiveVault(),
+  };
+  return detect(text, context);
 }
 
 function runDetection(

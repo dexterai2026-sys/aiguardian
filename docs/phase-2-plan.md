@@ -460,6 +460,35 @@ grant (needed at all, since content scripts are "untrusted" contexts for session
 default) completes; `getVaultSessionCache()` now treats any such storage-access failure as "cache
 unavailable" via try/catch, rather than letting it throw and silently abort the entire scan.
 
+**Post-PR-16 fixes, found via the owner's own hands-on testing of a real build** (not caught by any
+fixture-based e2e test, since each needed a real AI site or a real rich-text editor to surface):
+
+- **SPA navigation could silently break all protection on a page.** ChatGPT/Claude/Gemini are
+  single-page apps; starting a new conversation can replace the compose box's own DOM node without
+  a full page load, but a content script only runs once, at initial injection - a one-time
+  find-and-attach left every listener wired to an element that later got silently detached, with no
+  error and no visible sign anything had gone wrong. `lib/watchComposeBox.ts` replaces the one-shot
+  attach in all four content scripts with a MutationObserver-driven watch that re-attaches whenever
+  the live compose box changes. `lib/findComposeBox.ts`'s new `findComposeBoxWithFallback` also
+  gives the three adapter-covered sites a real fallback for the first time: if a site's precise
+  selector ever stops matching (the site changed its markup), it now falls back to the
+  generic-fallback script's own "largest visible input" heuristic instead of finding nothing at all.
+- **"Send masked" could still send the original text on a rich-text editor.** ChatGPT's compose box
+  is a ProseMirror editor with its own internal document model, separate from the DOM;
+  `setComposeBoxText`'s direct `.textContent` overwrite changed what was on screen without touching
+  that internal model, so replaying the send could go on to submit the editor's own (still
+  original) state. Fixed via `execCommand("insertText", ...)` in `lib/sendInterceptor.ts`, which
+  goes through the same native text-insertion path a real keystroke would.
+- **Vault entries never protected outgoing text at all, in either mode** - a structural gap since
+  PR 14 introduced the vault, not a regression from any single change: every content script's
+  outgoing detection used a hardcoded context with no `vault` field whatsoever. Fixed with the
+  owner's explicit sign-off to widen vault protection to outgoing text in _both_ personal and family
+  mode (previously the vault session cache was family-mode-only, scoped to the AI-reply side only) -
+  see `docs/adr/0007-local-vault-crypto-choices.md`'s second addendum for the full reasoning,
+  including why `lib/liveVault.ts` throttles its background refresh to real compose-box activity
+  rather than a blind timer (to avoid quietly defeating the vault session cache's own 15-minute
+  auto-lock-on-inactivity).
+
 ### PR 16 — Store readiness
 
 - Audit final manifest permissions against what's actually used; narrow anywhere possible.

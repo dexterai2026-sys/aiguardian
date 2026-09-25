@@ -3,17 +3,18 @@ import type { VaultEntry } from "@guardian/engine-ts";
 /**
  * Caches the vault's decrypted contents in chrome.storage.session (PR 15) - memory-only, never
  * written to disk, cleared automatically when the browser fully closes - once unlocked via the
- * options page, so content scripts on AI sites can check the AI's own replies against it too.
- * Without this, the vault's decrypted contents would only ever be reachable from the options
- * page's own memory, a separate JS context content scripts have no access to at all (see
- * docs/adr/0007-local-vault-crypto-choices.md's addendum for the full reasoning and the
- * alternatives considered).
+ * options page, so content scripts on AI sites can check both outgoing text and (in family mode)
+ * the AI's own replies against it. Without this, the vault's decrypted contents would only ever be
+ * reachable from the options page's own memory, a separate JS context content scripts have no
+ * access to at all (see docs/adr/0007-local-vault-crypto-choices.md's addendum for the full
+ * reasoning and the alternatives considered).
  *
  * Auto-locks after IDLE_TIMEOUT_MS of no use - the same "unlock once, auto-lock on inactivity"
  * pattern password manager extensions use for exactly this problem. Every read extends the window
  * (a sliding expiration), so active use is never interrupted, but the cache reliably clears itself
- * if the person walks away. Only ever populated when family mode is on (see options/main.ts) -
- * personal-mode users get zero additional exposure from this cache existing at all.
+ * if the person walks away. Populated regardless of mode (see options/main.ts) - originally
+ * family-mode-only, widened after real-world testing found vault entries were never protecting
+ * outgoing text at all; see that ADR addendum for the owner sign-off on this scope change.
  */
 export const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 const CACHE_KEY = "guardianVaultSessionCache";

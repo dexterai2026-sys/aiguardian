@@ -1,23 +1,26 @@
-// Options page (docs/phase-2-plan.md, PR 14, PR 15): the mode toggle (personal/family), age
-// profile, and the local, device-only encrypted personal vault
-// (docs/adr/0007-local-vault-crypto-choices.md). The passphrase and decrypted vault contents live
-// only in this page's memory for as long as it's open ("unlocked") - nothing is cached across page
-// loads, and closing or reloading the page is itself a lock.
+// Options page (docs/phase-2-plan.md, PR 14, PR 15, and the vault-scope-widening fix after PR 16):
+// the mode toggle (personal/family), age profile, and the local, device-only encrypted personal
+// vault (docs/adr/0007-local-vault-crypto-choices.md). The passphrase and decrypted vault contents
+// live only in this page's memory for as long as it's open ("unlocked") - nothing is cached across
+// page loads, and closing or reloading the page is itself a lock.
 //
-// The one exception is lib/vaultSessionCache.ts (PR 15): whenever the vault is unlocked or edited
-// while family mode is on, this page also mirrors the current entries into
-// chrome.storage.session, so the content scripts running on AI sites can check the AI's own
-// replies against the vault too - see that file's docs for the full reasoning (why this exists,
-// why it's family-mode-only, and its own auto-lock). Locking *this page's* view of the vault
-// (below) deliberately does not clear that cache - it has its own independent lifetime so response
-// flagging on AI sites keeps working after Settings is closed, which is the entire point of it
-// existing.
+// The one exception is lib/vaultSessionCache.ts (PR 15): whenever the vault is unlocked or edited,
+// this page also mirrors the current entries into chrome.storage.session, so content scripts
+// running on AI sites can check both what's about to be sent AND (in family mode) the AI's own
+// replies against the vault - see that file's docs for the full reasoning. This used to be
+// family-mode-only; real-world testing after PR 16 shipped found that vault entries were never
+// protecting outgoing text at all, in either mode - CLAUDE.md frames the vault as valuable for
+// individual adults too, not just families, so this was widened to always populate the cache,
+// with the owner's explicit sign-off (the same kind of privacy-relevant decision PR 15's original
+// family-mode-only scoping went through). Locking *this page's* view of the vault (below)
+// deliberately does not clear that cache - it has its own independent lifetime so protection on AI
+// sites keeps working after Settings is closed, which is the entire point of it existing.
 export {}; // See popup/main.ts's matching comment for why.
 
 import type { AgeProfile, Mode, VaultEntry } from "@guardian/engine-ts";
 import { getAgeProfile, getMode, setAgeProfile, setMode } from "../lib/familyModeStorage.js";
 import { VaultDecryptionError } from "../lib/vaultCrypto.js";
-import { clearVaultSessionCache, setVaultSessionCache } from "../lib/vaultSessionCache.js";
+import { setVaultSessionCache } from "../lib/vaultSessionCache.js";
 import { getVaultBlob, loadVault, saveVault } from "../lib/vaultStorage.js";
 
 async function initModeSection(): Promise<void> {
@@ -35,13 +38,8 @@ async function initModeSection(): Promise<void> {
   const onModeChange = (): void => {
     const newMode: Mode = familyRadio.checked ? "family" : "personal";
     void setMode(newMode);
-    if (newMode === "personal") {
-      // Family-mode response flagging (PR 15) is the only consumer of the vault session cache -
-      // switching away from family mode means nothing should still be able to read it. (Switching
-      // *into* family mode while the vault happens to already be unlocked in this same page load
-      // is a narrower case, covered by initVaultSection's own syncSessionCache() calls instead.)
-      void clearVaultSessionCache();
-    }
+    // The vault session cache (lib/vaultSessionCache.ts) is no longer family-mode-only - it
+    // protects outgoing text in personal mode too - so switching modes has nothing to clear here.
   };
   personalRadio.addEventListener("change", onModeChange);
   familyRadio.addEventListener("change", onModeChange);
@@ -127,13 +125,12 @@ function initVaultSection(): void {
     pendingPersist = saveVault(unlockedPassphrase, { entries });
   }
 
-  // Keeps lib/vaultSessionCache.ts (PR 15's bridge to family-mode response flagging on AI sites)
-  // in sync with this page's own in-memory entries - only ever populated in family mode, so a
-  // personal-mode user gets no additional exposure from this cache existing at all.
+  // Keeps lib/vaultSessionCache.ts (PR 15's bridge from this page's own in-memory vault to the
+  // content scripts running on AI sites) in sync with this page's own in-memory entries - in both
+  // modes, so vault matching protects outgoing text for personal-mode users too, not just
+  // family-mode response flagging.
   async function syncSessionCache(): Promise<void> {
-    if ((await getMode()) === "family") {
-      await setVaultSessionCache(entries);
-    }
+    await setVaultSessionCache(entries);
   }
 
   unlockButton.addEventListener("click", () => {

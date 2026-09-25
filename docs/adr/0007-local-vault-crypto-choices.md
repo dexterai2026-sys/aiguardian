@@ -129,5 +129,48 @@ expiration - the same pattern password manager extensions use for exactly this p
 
 This addendum does not change any decision above it - PBKDF2, `chrome.storage.local` for the
 encrypted-at-rest blob, and no recovery mechanism all stand as originally decided. It only adds a
-second, deliberately weaker-lived, memory-only copy of the _decrypted_ vault, scoped to family mode
-and to the current browser session.
+second, deliberately weaker-lived, memory-only copy of the _decrypted_ vault, scoped (at the time)
+to family mode and to the current browser session.
+
+## Addendum 2 (post-PR 16): widened to protect outgoing text, in both modes
+
+Real-world testing after PR 16 shipped found a genuine bug: registering a value in the vault never
+protected the compose box at all, in either mode. `lib/familyContext.ts` (Addendum 1, above) only
+ever built a vault-aware `Context` for scanning the AI's own _reply_, gated to family mode; every
+content script's own outgoing detection used a separate, hardcoded `PERSONAL_CONTEXT` with no
+`vault` field whatsoever - a structural gap since PR 14 introduced the vault, not a regression from
+any single later change. The owner discovered this hands-on (typing a vault-registered address into
+ChatGPT produced no highlight and no send-interception at all).
+
+Fixing it meant a real, owner-approved decision, not a default picked silently: should vault
+matching protect outgoing text, and in personal mode too, or stay scoped to family mode (matching
+Addendum 1's original scoping for the AI-reply side)? The owner chose **both modes** - CLAUDE.md
+already frames the vault as valuable for individual adults protecting their own registered
+info, not just families, and Addendum 1's family-mode-only scoping was specific to the _AI-reply_
+side's more sensitive monitoring use case, not a statement that outgoing protection should also be
+limited that way.
+
+**What changed:**
+
+- `lib/vaultSessionCache.ts` is now populated regardless of mode (`options/main.ts`'s
+  `syncSessionCache()` no longer checks `getMode()` first), and switching from family to personal
+  mode no longer clears it - the cache now has exactly one job (holding the decrypted vault for any
+  content script that needs it), not a family-mode-only one.
+- `lib/liveVault.ts` (new) gives every content script's outgoing detection a synchronously-readable,
+  background-refreshed snapshot of the vault - `detect()` needs a `Context` synchronously on every
+  keystroke, but the vault lives in async `chrome.storage.session`, and awaiting it inline would
+  make typing feel slow (CLAUDE.md's latency intent). Deliberately throttled to real activity (a
+  refresh only kicks off, at most once per 5 seconds, when the compose box's own detection actually
+  runs) rather than a blind `setInterval`: an unconditional background timer would keep resetting
+  `vaultSessionCache.ts`'s own 15-minute idle auto-lock for as long as an AI-site tab merely stayed
+  open, defeating the "auto-locks if the person walks away" property that timeout exists for. Tying
+  refreshes to actual compose-box activity keeps that property intact.
+- Every content script's outgoing `Context` keeps `mode: "personal"` unconditionally, deliberately
+  _not_ switched to the real family/personal mode - the family-only `content.*` categories
+  (self-harm/sexual/violence/secrecy) are about flagging the AI's own reply, not the person's own
+  outgoing text, and widening vault matching wasn't a request to also widen those categories to
+  outgoing text. Only `vault` was added to the outgoing context; nothing else about it changed.
+
+This is a genuine scope widening of Addendum 1's original "family-mode-only" cache-population
+decision, made with the same explicit owner sign-off process as every other decision in this ADR -
+not a quiet reversal.
