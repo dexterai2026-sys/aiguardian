@@ -127,3 +127,28 @@ export function createFileWarningPanel(
     ],
   );
 }
+
+export interface HiddenTextWarningCallbacks {
+  onDismiss(): void;
+}
+
+/**
+ * The hidden-injection copy warning (PR 11): unlike the send/file cases, there's nothing to mask,
+ * cancel, or retry - the copy already happened (CLAUDE.md: never silently strip or block, the
+ * person decides what to do with the warning), so this is purely informational, with the hidden
+ * text shown so the person can judge for themselves rather than just being told to trust Guardian.
+ */
+export function createHiddenTextWarningPanel(
+  ownerDocument: Document,
+  hiddenTextSummary: string,
+  callbacks: HiddenTextWarningCallbacks,
+): InterceptionPanel {
+  return createPanelShell(
+    ownerDocument,
+    "guardian-hidden-text-warning",
+    "Guardian found text hidden from view in what you just copied. It wasn't visible on the page, but it will be included if you paste - possibly instructions meant to manipulate an AI, not for you to read:",
+    hiddenTextSummary,
+    "guardian-hidden-text-summary",
+    [{ label: "Dismiss", className: "guardian-btn-dismiss", onClick: callbacks.onDismiss }],
+  );
+}

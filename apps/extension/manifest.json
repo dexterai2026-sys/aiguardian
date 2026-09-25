@@ -40,6 +40,10 @@
         "http://localhost/*"
       ],
       "js": ["src/content-scripts/generic-fallback.ts"]
+    },
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "js": ["src/content-scripts/page-scanner.ts"]
     }
   ]
 }

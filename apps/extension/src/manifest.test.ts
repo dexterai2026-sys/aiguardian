@@ -72,3 +72,22 @@ describe("every AI domain is covered by exactly one content script", () => {
     }
   });
 });
+
+/**
+ * content-scripts/page-scanner.ts (PR 11) is the one deliberate exception to "only run on AI
+ * sites": it watches for the "copy" event site-wide, since hidden prompt-injection content can
+ * live on any page the person might copy from, not just an AI chat page. Broad host permissions
+ * are a real, owner-approved decision (2026-09-25, see docs/phase-2-plan.md's PR 11 notes), not an
+ * accident - this test pins its match pattern so a future edit can't silently narrow or widen it
+ * without the change being visible in a diff here.
+ */
+describe("page-scanner content script runs on every site, by design", () => {
+  const manifest = readJson<{ content_scripts: ContentScriptEntry[] }>("../manifest.json");
+  const pageScanner = manifest.content_scripts.find((entry) =>
+    entry.js.includes("src/content-scripts/page-scanner.ts"),
+  );
+
+  it("has a page-scanner content script entry matching every http(s) site", () => {
+    expect(pageScanner?.matches).toEqual(["https://*/*", "http://*/*"]);
+  });
+});

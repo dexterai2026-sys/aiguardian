@@ -287,6 +287,27 @@ per site) are available, pre- or post-launch; no code-level prerequisite blocks 
 - Surface a warning (visible indicator) before/if the user copies such content, without silently
   stripping anything — the person decides what to do with the warning.
 
+**Delivered, with an explicit owner-approved permissions decision.** The hidden text this PR
+targets can live on _any_ webpage the person might copy from, not just an AI chat page — so unlike
+every other content script in this extension, `content-scripts/page-scanner.ts` had to run
+site-wide. Before writing any code, the owner was asked to choose between an all-sites content
+script, an `activeTab`-only manually-invoked scanner, or narrowing scope to AI-site pages only; the
+owner chose the all-sites content script (2026-09-25). `manifest.json` now has a
+`"https://*/*", "http://*/*"` content script entry — a real permissions-footprint increase flagged
+plainly here since Chrome Web Store review will show "Read and change all your data on all
+websites you visit" for it, which nothing else in this extension has needed until now.
+
+`lib/hiddenTextScanner.ts` inspects the DOM (computed style + bounding rect) of whatever the
+person's current selection actually spans on `"copy"`, checking for `display:none`,
+`visibility:hidden`, near-zero opacity, near-zero font size, foreground color equal to background,
+zero-size (clipped) boxes, and off-screen positioning — deliberately heuristic and documented as
+narrower than a full contrast-ratio/visibility engine, consistent with this codebase's existing
+"honest, narrow, documented gap" pattern elsewhere (e.g. `secret.password`'s known false positive,
+`pii.name`'s vault-only reachability). A new `createHiddenTextWarningPanel`
+(`lib/interceptionPanel.ts`) shows what was found, with a single "Dismiss" action — there's nothing
+to mask, cancel, or retry after a copy has already happened, and CLAUDE.md requires never silently
+stripping or blocking, only informing.
+
 ### PR 12 — AI site allow/block + visible protection indicator
 
 - Popup/options UI listing known AI sites (from `/rules/ai-domains.json`) with a per-site
