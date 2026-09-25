@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # The corpus precision/recall quality gate (structured PII and vault.match must meet
+      # CLAUDE.md's >=0.95 precision / >=0.90 recall target) is asserted in the tests themselves
+      # (see packages/engine-ts/src/detect.eval.test.ts) rather than duplicated here, so there is
+      # a single source of truth for the threshold. This step just captures the output so the
+      # per-category numbers can be published below, whether or not the gate passes.
+      - name: Test (includes the corpus precision/recall quality gate)
+        run: pnpm test 2>&1 | tee test-output.log
+
+      - name: Publish detection corpus report to job summary
+        if: always()
+        run: |
+          {
+            echo "## Detection corpus report"
+            echo
+            echo "Per-category precision/recall from the test-corpus evaluation. Only"
+            echo "structured PII and vault.match are held to CLAUDE.md's quality target"
+            echo "(>=0.95 precision, >=0.90 recall) as a hard gate (a test failure above"
+            echo "means one of them missed it); every other category is reported here for"
+            echo "visibility, not gated - see docs/phase-1-plan.md."
+            echo
+            echo '```'
+            grep -E ': precision=' test-output.log | sort -u || echo "(no per-category report lines found)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,5 +1,7 @@
 # Guardian (working name)
 
+[![CI](https://github.com/dexterai2026-sys/aiguardian/actions/workflows/ci.yml/badge.svg)](https://github.com/dexterai2026-sys/aiguardian/actions/workflows/ci.yml)
+
 A tool-agnostic AI safety layer for families and individuals: detects personal information and
 prompt-injection content before it reaches an AI, and (in family mode) gives parents
 category-only alerts about concerning AI interactions — without ever sending prompt or response
