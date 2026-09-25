@@ -23,11 +23,44 @@ export interface SendInterceptorOptions {
   onMasked?: (restoreMap: RestoreMap, findings: Finding[]) => void;
 }
 
+/**
+ * Selects all of `composeBox`'s content and replaces it via `execCommand("insertText", ...)`,
+ * returning whether that actually worked. This matters for a rich-text editor (e.g. ChatGPT's
+ * ProseMirror-based compose box): such editors keep their OWN internal document model, entirely
+ * separate from the DOM - directly overwriting `.textContent` changes what's on screen but leaves
+ * that internal model untouched, so a framework's own Enter/Send handling (which reads its model,
+ * not raw DOM text) can go on to send the ORIGINAL, un-masked text a moment later even though the
+ * DOM briefly showed the masked version (a real bug found via testing on live chatgpt.com, not
+ * caught by this repo's fixture-based e2e tests, whose fixtures are plain, framework-free
+ * contenteditable elements). `execCommand("insertText", ...)`, despite being deprecated, is still
+ * implemented by Chromium and is exactly the technique other extensions in this same space
+ * (grammar/spell-checkers) use for this reason: it goes through the same native text-insertion
+ * path a real keystroke would, which rich editors listen for via `beforeinput`/`input` to update
+ * their own state correctly - unlike a synthetic "input" event fired after the fact.
+ */
+function setContentEditableTextViaExecCommand(composeBox: HTMLElement, text: string): boolean {
+  const ownerDocument = composeBox.ownerDocument;
+  composeBox.focus();
+  const selection = ownerDocument.getSelection();
+  const range = ownerDocument.createRange();
+  range.selectNodeContents(composeBox);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  try {
+    return ownerDocument.execCommand("insertText", false, text);
+  } catch {
+    // Not implemented in this environment (e.g. jsdom in unit tests) - caller falls back.
+    return false;
+  }
+}
+
 function setComposeBoxText(composeBox: HTMLElement, text: string): void {
   if (composeBox instanceof HTMLTextAreaElement) {
     composeBox.value = text;
-  } else {
+  } else if (!setContentEditableTextViaExecCommand(composeBox, text)) {
     composeBox.textContent = text;
+  } else {
+    return; // execCommand already dispatched its own native input event(s).
   }
   // Sites commonly listen for "input" to sync their own state (React/Vue controlled inputs,
   // send-button enabled/disabled state, etc.) - setting .value/.textContent directly doesn't

@@ -163,6 +163,18 @@ describe("attachSendInterceptor", () => {
     expect(siteHandler).toHaveBeenCalledTimes(1);
   });
 
+  it("\"Send masked\" replaces a contenteditable compose box's text too, falling back to textContent when execCommand is unavailable (as in this jsdom test environment - see sendInterceptor.ts's setContentEditableTextViaExecCommand)", () => {
+    document.body.innerHTML = '<div contenteditable="true" id="compose"></div>';
+    const composeBox = document.querySelector<HTMLElement>("#compose")!;
+    composeBox.textContent = "email jane@example.com";
+
+    attachSendInterceptor({ composeBox, sendButton: null, detectNow: emailFinding });
+    pressEnter(composeBox);
+    document.querySelector<HTMLButtonElement>(".guardian-btn-send-masked")!.click();
+
+    expect(composeBox.textContent).toBe("email [EMAIL_1]");
+  });
+
   it("intercepts clicks on a send button that doesn't exist yet at attach time, given a resolver function", () => {
     // Mirrors ChatGPT (see adapters/chatgpt.ts): no send button in the DOM at all until the
     // compose box has content - a fixed element captured once up front would never see it.
