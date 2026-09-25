@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guardian send-interception fixture</title>
+  </head>
+  <body>
+    <div>
+      <textarea id="compose" style="width: 600px; height: 200px"></textarea>
+      <button id="send" type="button">Send</button>
+    </div>
+    <div id="sent-log"></div>
+
+    <script>
+      // Simulates a real AI chat site's own send logic: Enter-to-send (no Shift) and a send
+      // button both read the compose box and record what was "sent", then clear the box - same
+      // shape as a real site's fetch-and-clear behavior, without actually needing a server.
+      const compose = document.getElementById("compose");
+      const sendButton = document.getElementById("send");
+      const log = document.getElementById("sent-log");
+
+      function send() {
+        const li = document.createElement("p");
+        li.className = "sent-message";
+        li.textContent = compose.value;
+        log.appendChild(li);
+        compose.value = "";
+      }
+
+      compose.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          send();
+        }
+      });
+      sendButton.addEventListener("click", send);
+    </script>
+  </body>
+</html>
