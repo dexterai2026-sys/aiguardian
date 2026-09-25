@@ -9,6 +9,10 @@ test("finds the larger compose box and runs debounced detection on real typed in
     const page = await context.newPage();
     await page.goto(server.url);
 
+    // The protection badge (PR 12) is unconditional, present as soon as the compose box is found -
+    // not gated on typing or findings.
+    await expect(page.locator(".guardian-protection-badge")).toBeVisible();
+
     const compose = page.locator("#compose");
     await compose.click();
     await compose.pressSequentially("email me at jane@example.com", { delay: 20 });

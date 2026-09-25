@@ -8,5 +8,5 @@ test("the extension loads and its background service worker registers", async ({
 
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/src/popup/index.html`);
-  await expect(page.locator("#app")).toHaveText("Guardian — protection active");
+  await expect(page.locator("#status")).toHaveText("Guardian — protection active");
 });

@@ -6,7 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
   <body>
-    <div id="app">Guardian</div>
+    <div id="app">
+      <p id="status">Guardian — protection active</p>
+      <div id="browser-notice" hidden>
+        <p id="browser-notice-text"></p>
+        <button id="browser-notice-dismiss" type="button">Got it</button>
+      </div>
+      <ul id="site-list"></ul>
+    </div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

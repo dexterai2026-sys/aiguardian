@@ -11,7 +11,7 @@
     "type": "module"
   },
   "options_page": "src/options/index.html",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "declarativeNetRequest"],
   "content_scripts": [
     {
       "matches": ["http://localhost/*"],

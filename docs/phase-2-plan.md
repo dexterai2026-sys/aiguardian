@@ -319,6 +319,33 @@ stripping or blocking, only informing.
 - Detect Edge/Brave and show a one-time notice that built-in browser AI sidebars (Copilot in
   Edge, Brave Leo) are not covered by content-script-based detection, per CLAUDE.md.
 
+**Delivered.** `lib/aiSiteGroups.ts` groups `/rules/ai-domains.json`'s flat (domain, name) entries
+by name (ChatGPT and Character.AI each span two domains) so the popup shows one toggle per site the
+person recognizes, not one per domain. `lib/blockRules.ts` is the pure, unit-tested function turning
+a list of blocked site names into `declarativeNetRequest` block rules (stable per-domain rule IDs,
+scoped to `main_frame` navigation only); `background/index.ts` is the thin wiring calling
+`chrome.declarativeNetRequest.updateDynamicRules` whenever `chrome.storage.onChanged` fires for the
+blocked-sites key. `manifest.json` gained the `declarativeNetRequest` permission.
+
+The popup (`src/popup/`) lists every site with a checkbox, persists a toggle via
+`lib/siteSettingsStorage.ts` (a thin `chrome.storage.local` wrapper, deliberately not unit-tested -
+exercised instead by e2e/popup.spec.ts in a real browser, including verifying the actual dynamic
+rules registered via the background service worker's own `chrome.declarativeNetRequest.getDynamicRules()`).
+
+`lib/protectionBadge.ts` is the on-page indicator: a permanent, unconditional element inserted
+right after the compose box (same insert-after-element pattern as the review panels) on every AI
+site content script - generic-fallback and all three adapters. The "toolbar icon state" piece is
+intentionally minimal: `chrome.action.setTitle` on install, not a dynamic per-tab badge - there was
+no clear additional signal to show once Chrome's own "site blocked" page already covers the blocked
+case, and a badge here would only add noise ahead of PR 13's real usage-stats badge.
+
+`lib/browserDetection.ts` detects Edge via its `Edg/` user-agent token and Brave via its
+`navigator.brave.isBrave()` runtime API (Brave's user agent deliberately mimics Chrome's for
+site-compatibility, so UA sniffing alone can't catch it) - both pure and unit-tested with an
+injectable `navigator`-shaped object, since jsdom's real `navigator` has no `.brave`. The popup
+shows the resulting one-time notice, dismissed and remembered via
+`lib/siteSettingsStorage.ts`'s seen-flag.
+
 ### PR 13 — Local usage stats
 
 - Local-only counters (per site, per category) of findings/masks over time, shown in the popup.

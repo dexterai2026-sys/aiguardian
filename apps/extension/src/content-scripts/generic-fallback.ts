@@ -23,6 +23,7 @@ import { isFixtureTarget } from "../lib/fixtureTarget.js";
 import { findComposeBox, readComposeBoxText } from "../lib/findComposeBox.js";
 import { findSendButton } from "../lib/findSendButton.js";
 import { createHighlightOverlay } from "../lib/highlightOverlay.js";
+import { createProtectionBadge } from "../lib/protectionBadge.js";
 import { attachSendInterceptor } from "../lib/sendInterceptor.js";
 
 const DEBOUNCE_MS = 300;
@@ -49,6 +50,7 @@ function runDetection(
 }
 
 function attach(composeBox: HTMLElement): void {
+  createProtectionBadge(composeBox);
   const overlay = createHighlightOverlay(composeBox);
   const debouncedRun = debounce(() => runDetection(composeBox, overlay), DEBOUNCE_MS);
   composeBox.addEventListener("input", debouncedRun);
