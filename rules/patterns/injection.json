@@ -1,0 +1,17 @@
+[
+  {
+    "category": "injection.hidden_text",
+    "pattern": "(?:[\\u200B\\u200C\\u200D\\u2060\\uFEFF\\u202A-\\u202E\\u2066-\\u2069])+",
+    "confidence": 0.9,
+    "placeholderPrefix": "HIDDEN",
+    "description": "Runs of zero-width characters (U+200B/C/D, word joiner, BOM) and bidirectional-override/isolate characters (U+202A-E, U+2066-9), both real techniques for hiding instructions from a human reader while an LLM still reads them ('ASCII smuggling', 'Trojan Source'). Flags presence only - doesn't decode what's hidden. The Unicode Tags block (another known smuggling vector, astral plane) is a follow-up, not covered yet."
+  },
+  {
+    "category": "injection.instruction_pattern",
+    "pattern": "\\b(?:ignore (?:all )?(?:previous|prior|above) instructions|disregard (?:the )?(?:system prompt|previous instructions)|you are now (?:DAN|in developer mode)|pretend (?:you have|to have) no (?:restrictions|rules)|reveal your (?:system prompt|instructions)|forget (?:everything|all) (?:above|previous)|act as if you have no (?:restrictions|filters))\\b",
+    "flags": "i",
+    "confidence": 0.8,
+    "placeholderPrefix": "INJECTION",
+    "description": "Known jailbreak/injection phrasings. Deliberately specific phrases rather than loose keywords (e.g. not just 'ignore' or 'instructions' alone), to keep precision reasonable at the cost of recall against paraphrased attacks - a real limitation, not a target for Phase 1's ML tier (Tier 3, later)."
+  }
+]
