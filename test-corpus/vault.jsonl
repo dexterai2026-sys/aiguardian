@@ -1,0 +1,12 @@
+{"id":"vault-name-exact-001","text":"Jonathan has soccer practice today.","expected":[{"category":"vault.match","start":0,"end":8}],"notes":"exact match against a registered name"}
+{"id":"vault-name-fuzzy-001","text":"Jonathon has soccer practice today.","expected":[{"category":"vault.match","start":0,"end":8}],"notes":"fuzzy match: one-letter misspelling of the registered name 'Jonathan' (edit distance 1)"}
+{"id":"vault-name-neg-nickname-001","text":"Jonny has soccer practice today.","expected":[],"notes":"hard negative: 'Jonny' is a nickname for the registered 'Jonathan', but has edit distance 5 - out of scope for Levenshtein-based fuzzy matching (documented limitation, needs a separate alias list)"}
+{"id":"vault-name-neg-different-001","text":"John has soccer practice today.","expected":[],"notes":"hard negative: a different, unrelated name that happens to share a prefix with the registered 'Jonathan'"}
+{"id":"vault-address-001","text":"We live on Maple Street near the park.","expected":[{"category":"vault.match","start":11,"end":23}],"notes":"exact substring match against a registered multi-word street"}
+{"id":"vault-address-neg-001","text":"We live on Elm Street near the park.","expected":[],"notes":"hard negative: a different street; multi-word vault values are exact-match only, no fuzzy tolerance"}
+{"id":"vault-school-001","text":"She goes to Lincoln Elementary School every day.","expected":[{"category":"vault.match","start":12,"end":37}],"notes":"exact substring match against a registered school name"}
+{"id":"vault-school-neg-001","text":"She goes to Washington Elementary School every day.","expected":[],"notes":"hard negative: a different school"}
+{"id":"vault-shortname-neg-001","text":"Eva loves painting.","expected":[],"notes":"hard negative: registered sibling name is 'Ava' (3 chars); short values are exact-match only by design, so the one-letter-off 'Eva' is not flagged"}
+{"id":"vault-shortname-001","text":"Ava loves painting.","expected":[{"category":"vault.match","start":0,"end":3}],"notes":"exact match against a short (3-char) registered name"}
+{"id":"vault-neg-general-001","text":"We had pizza for dinner and watched a movie.","expected":[],"notes":"no vault values present"}
+{"id":"vault-multi-001","text":"Jonathan and Ava live on Maple Street.","expected":[{"category":"vault.match","start":0,"end":8},{"category":"vault.match","start":13,"end":16},{"category":"vault.match","start":25,"end":37}],"notes":"three distinct vault entries matched in one message"}
