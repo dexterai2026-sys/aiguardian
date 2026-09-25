@@ -25,6 +25,7 @@ import { findSendButton } from "../lib/findSendButton.js";
 import { createHighlightOverlay } from "../lib/highlightOverlay.js";
 import { createProtectionBadge } from "../lib/protectionBadge.js";
 import { attachSendInterceptor } from "../lib/sendInterceptor.js";
+import { recordFindingsShown, recordMasked } from "../lib/usageStats.js";
 
 const DEBOUNCE_MS = 300;
 
@@ -64,9 +65,16 @@ function attach(composeBox: HTMLElement): void {
     setTimeout(() => runDetection(composeBox, overlay), 0);
   });
 
-  // onMasked (the resulting restoreMap) is unused here - see the file-level comment on
-  // lib/responseRestore.ts above for why the generic fallback doesn't consume it yet.
-  attachSendInterceptor({ composeBox, sendButton: findSendButton(composeBox), detectNow });
+  // onMasked's restoreMap is unused here - see the file-level comment on lib/responseRestore.ts
+  // above for why the generic fallback doesn't consume it yet - but its findings still feed
+  // PR 13's usage stats regardless.
+  attachSendInterceptor({
+    composeBox,
+    sendButton: findSendButton(composeBox),
+    detectNow,
+    onFindings: (findings) => void recordFindingsShown(location.hostname, findings),
+    onMasked: (_restoreMap, findings) => void recordMasked(location.hostname, findings),
+  });
 }
 
 // In production, an adapter-covered site (e.g. chatgpt.com) is simply absent from this script's
@@ -81,5 +89,9 @@ if (isFixtureTarget("generic-fallback")) {
 
   // File inputs aren't necessarily inside the compose box's own container, so this is attached
   // unconditionally rather than gated on a compose box being found.
-  attachFileUploadInterceptor({ root: document, detect: detectNow });
+  attachFileUploadInterceptor({
+    root: document,
+    detect: detectNow,
+    onFindings: (findings) => void recordFindingsShown(location.hostname, findings),
+  });
 }

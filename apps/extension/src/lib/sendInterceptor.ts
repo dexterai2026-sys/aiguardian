@@ -12,10 +12,15 @@ export interface SendInterceptorOptions {
   sendButton: HTMLElement | null | (() => HTMLElement | null);
   /** Runs detection fresh at interception time - never relies on stale/debounced findings. */
   detectNow: (text: string) => Finding[];
+  /** Called whenever a review panel is actually shown to the person (PR 13: usage stats) - not on
+   * every debounced re-scan while typing, only the discrete moment findings were surfaced. */
+  onFindings?: (findings: Finding[]) => void;
   /** Called after "Send masked" replaces the compose box's text, so a caller (PR 7: response
    * restore) can keep the resulting map for this tab/conversation. Never persisted here or by
-   * any caller - CLAUDE.md requires restoreMap live in memory only. */
-  onMasked?: (restoreMap: RestoreMap) => void;
+   * any caller - CLAUDE.md requires restoreMap live in memory only. `findings` is the same set
+   * `onFindings` already saw for this interception, passed again so a caller (PR 13: usage stats)
+   * doesn't have to keep its own copy just to know what was masked. */
+  onMasked?: (restoreMap: RestoreMap, findings: Finding[]) => void;
 }
 
 function setComposeBoxText(composeBox: HTMLElement, text: string): void {
@@ -37,7 +42,7 @@ function setComposeBoxText(composeBox: HTMLElement, text: string): void {
  * "protect and teach, don't restrict" approach.
  */
 export function attachSendInterceptor(options: SendInterceptorOptions): void {
-  const { composeBox, sendButton, detectNow, onMasked } = options;
+  const { composeBox, sendButton, detectNow, onFindings, onMasked } = options;
   const ownerDocument = composeBox.ownerDocument;
 
   const resolveSendButton: () => HTMLElement | null =
@@ -85,6 +90,7 @@ export function attachSendInterceptor(options: SendInterceptorOptions): void {
     event.preventDefault();
     event.stopImmediatePropagation();
     closePanel(); // in case a previous panel from an earlier attempt is still open
+    onFindings?.(findings);
 
     const { maskedText, restoreMap } = mask(text, findings);
 
@@ -92,7 +98,7 @@ export function attachSendInterceptor(options: SendInterceptorOptions): void {
       onSendMasked(): void {
         closePanel();
         setComposeBoxText(composeBox, maskedText);
-        onMasked?.(restoreMap);
+        onMasked?.(restoreMap, findings);
         replay(kind);
       },
       onEdit(): void {

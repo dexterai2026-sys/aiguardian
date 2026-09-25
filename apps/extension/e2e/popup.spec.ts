@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { startFixtureServer } from "./localServer.js";
 
 async function openPopup(context: import("@playwright/test").BrowserContext, extensionId: string) {
   const page = await context.newPage();
@@ -90,4 +91,48 @@ test("re-allowing a site removes its declarativeNetRequest rules again", async (
       return rules.length;
     })
     .toBe(0);
+});
+
+test("shows no usage stats before anything has ever been flagged", async ({
+  context,
+  extensionId,
+}) => {
+  const page = await openPopup(context, extensionId);
+  await expect(page.locator("#usage-stats-empty")).toBeVisible();
+  await expect(page.locator("#usage-stats-table")).toBeHidden();
+});
+
+test("records a finding-shown and a masked-send in usage stats, then clears them", async ({
+  context,
+  extensionId,
+}) => {
+  const server = await startFixtureServer("./fixtures/send-interception.html");
+  try {
+    const page = await context.newPage();
+    await page.goto(server.url);
+    const compose = page.locator("#compose");
+    await compose.click();
+    await compose.pressSequentially("email jane@example.com", { delay: 20 });
+    await compose.press("Enter");
+    await page.locator(".guardian-btn-send-masked").click();
+
+    const popup = await openPopup(context, extensionId);
+    await expect(popup.locator("#usage-stats-table")).toBeVisible();
+    const row = popup.locator("#usage-stats-body tr");
+    await expect(row).toHaveCount(1);
+    await expect(row).toContainText("localhost");
+    await expect(row).toContainText("pii.email");
+    const cells = row.locator("td");
+    await expect(cells.nth(2)).toHaveText("1"); // findings
+    await expect(cells.nth(3)).toHaveText("1"); // masked
+
+    await popup.locator("#clear-usage-stats").click();
+    await expect(popup.locator("#usage-stats-empty")).toBeVisible();
+    await expect(popup.locator("#usage-stats-table")).toBeHidden();
+
+    const reopened = await openPopup(context, extensionId);
+    await expect(reopened.locator("#usage-stats-empty")).toBeVisible();
+  } finally {
+    await server.close();
+  }
 });

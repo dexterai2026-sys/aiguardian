@@ -17,6 +17,7 @@ import {
   markBrowserNoticeSeen,
   setSiteBlocked,
 } from "../lib/siteSettingsStorage.js";
+import { clearUsageStats, getUsageStats, type UsageStatsTable } from "../lib/usageStats.js";
 
 const BROWSER_NOTICE_TEXT: Record<"edge" | "brave", string> = {
   edge: "Edge's built-in Copilot sidebar isn't a regular web page Guardian can inject into, so it isn't protected. Guardian still protects chatgpt.com, claude.ai, and the other sites listed below.",
@@ -51,6 +52,36 @@ function renderSiteList(
   }
 }
 
+function renderUsageStats(
+  emptyElement: HTMLElement,
+  table: HTMLTableElement,
+  body: HTMLTableSectionElement,
+  stats: UsageStatsTable,
+): void {
+  body.innerHTML = "";
+  const rows = Object.entries(stats).flatMap(([site, byCategory]) =>
+    Object.entries(byCategory).map(([category, counts]) => ({ site, category, ...counts })),
+  );
+
+  if (rows.length === 0) {
+    emptyElement.hidden = false;
+    table.hidden = true;
+    return;
+  }
+
+  emptyElement.hidden = true;
+  table.hidden = false;
+  for (const row of rows) {
+    const tr = document.createElement("tr");
+    for (const value of [row.site, row.category, String(row.findings), String(row.masked)]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  }
+}
+
 async function renderBrowserNotice(
   noticeElement: HTMLElement,
   textElement: HTMLElement,
@@ -78,6 +109,10 @@ async function init(): Promise<void> {
   const browserNotice = document.querySelector<HTMLElement>("#browser-notice");
   const browserNoticeText = document.querySelector<HTMLElement>("#browser-notice-text");
   const browserNoticeDismiss = document.querySelector<HTMLButtonElement>("#browser-notice-dismiss");
+  const usageStatsEmpty = document.querySelector<HTMLElement>("#usage-stats-empty");
+  const usageStatsTable = document.querySelector<HTMLTableElement>("#usage-stats-table");
+  const usageStatsBody = document.querySelector<HTMLTableSectionElement>("#usage-stats-body");
+  const clearUsageStatsButton = document.querySelector<HTMLButtonElement>("#clear-usage-stats");
 
   if (siteList) {
     const groups = getAiSiteGroups();
@@ -87,6 +122,16 @@ async function init(): Promise<void> {
 
   if (browserNotice && browserNoticeText && browserNoticeDismiss) {
     await renderBrowserNotice(browserNotice, browserNoticeText, browserNoticeDismiss);
+  }
+
+  if (usageStatsEmpty && usageStatsTable && usageStatsBody) {
+    renderUsageStats(usageStatsEmpty, usageStatsTable, usageStatsBody, await getUsageStats());
+
+    clearUsageStatsButton?.addEventListener("click", () => {
+      void clearUsageStats().then(() => {
+        renderUsageStats(usageStatsEmpty, usageStatsTable, usageStatsBody, {});
+      });
+    });
   }
 }
 

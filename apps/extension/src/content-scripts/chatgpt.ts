@@ -16,6 +16,7 @@ import { createHighlightOverlay } from "../lib/highlightOverlay.js";
 import { createProtectionBadge } from "../lib/protectionBadge.js";
 import { attachResponseRestore } from "../lib/responseRestore.js";
 import { attachSendInterceptor } from "../lib/sendInterceptor.js";
+import { recordFindingsShown, recordMasked } from "../lib/usageStats.js";
 
 const DEBOUNCE_MS = 300;
 
@@ -61,10 +62,12 @@ function attach(composeBox: HTMLElement): void {
     // front the way most sites' send buttons can.
     sendButton: () => chatgptAdapter.findSendButton(composeBox),
     detectNow,
-    onMasked(newEntries) {
+    onFindings: (findings) => void recordFindingsShown(location.hostname, findings),
+    onMasked(newEntries, findings) {
       for (const [placeholder, value] of newEntries) {
         restoreMap.set(placeholder, value);
       }
+      void recordMasked(location.hostname, findings);
     },
   });
 
@@ -88,5 +91,9 @@ if (isFixtureTarget("chatgpt")) {
     attach(composeBox);
   }
 
-  attachFileUploadInterceptor({ root: document, detect: detectNow });
+  attachFileUploadInterceptor({
+    root: document,
+    detect: detectNow,
+    onFindings: (findings) => void recordFindingsShown(location.hostname, findings),
+  });
 }

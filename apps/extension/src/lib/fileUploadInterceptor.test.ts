@@ -152,4 +152,34 @@ describe("attachFileUploadInterceptor", () => {
     expect(siteHandler).toHaveBeenCalledTimes(1);
     expect(document.querySelectorAll(".guardian-file-warning-panel")).toHaveLength(0);
   });
+
+  it("calls onFindings once, with every flagged file's findings, when the panel is shown", async () => {
+    document.body.innerHTML = "<input type='file' id='upload' />";
+    const input = document.querySelector<HTMLInputElement>("#upload")!;
+    const onFindings = vi.fn();
+    handle = attachFileUploadInterceptor({ root: document, detect: emailFinding, onFindings });
+
+    setInputFiles(input, [
+      new File(["contact jane@example.com"], "notes.txt", { type: "text/plain" }),
+    ]);
+    fireChange(input);
+    await flush();
+
+    expect(onFindings).toHaveBeenCalledExactlyOnceWith(emailFinding("contact jane@example.com"));
+  });
+
+  it("never calls onFindings when nothing is flagged", async () => {
+    document.body.innerHTML = "<input type='file' id='upload' />";
+    const input = document.querySelector<HTMLInputElement>("#upload")!;
+    const onFindings = vi.fn();
+    handle = attachFileUploadInterceptor({ root: document, detect: emailFinding, onFindings });
+
+    setInputFiles(input, [
+      new File(["nothing sensitive here"], "notes.txt", { type: "text/plain" }),
+    ]);
+    fireChange(input);
+    await flush();
+
+    expect(onFindings).not.toHaveBeenCalled();
+  });
 });

@@ -13,6 +13,21 @@
         <button id="browser-notice-dismiss" type="button">Got it</button>
       </div>
       <ul id="site-list"></ul>
+
+      <h2>Usage stats</h2>
+      <p id="usage-stats-empty" hidden>No findings yet.</p>
+      <table id="usage-stats-table" hidden>
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Category</th>
+            <th>Findings</th>
+            <th>Masked</th>
+          </tr>
+        </thead>
+        <tbody id="usage-stats-body"></tbody>
+      </table>
+      <button id="clear-usage-stats" type="button">Clear stats</button>
     </div>
     <script type="module" src="./main.ts"></script>
   </body>

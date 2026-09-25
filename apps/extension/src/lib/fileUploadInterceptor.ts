@@ -8,6 +8,11 @@ export interface FileUploadInterceptorOptions {
    * own container, and may not even exist yet at the time this attaches. */
   root: Document;
   detect: (text: string) => Finding[];
+  /** Called once per flagged upload, with every flagged file's findings combined (PR 13: usage
+   * stats) - mirrors sendInterceptor.ts's onFindings, at the equivalent "actually shown to the
+   * person" moment. There's no masked-file equivalent of onMasked: a file can only be canceled or
+   * uploaded unchanged, never masked in place. */
+  onFindings?: (findings: Finding[]) => void;
 }
 
 /**
@@ -39,7 +44,7 @@ export interface FileUploadInterceptorHandle {
 export function attachFileUploadInterceptor(
   options: FileUploadInterceptorOptions,
 ): FileUploadInterceptorHandle {
-  const { root, detect } = options;
+  const { root, detect, onFindings } = options;
   let bypassNextChange = false;
 
   function replay(target: HTMLInputElement): void {
@@ -82,10 +87,11 @@ export function attachFileUploadInterceptor(
           return;
         }
 
+        const allFindings = flagged.flatMap(({ findings }) => findings);
+        onFindings?.(allFindings);
+
         const fileList = flagged.map(({ file }) => file.name).join(", ");
-        const categoryList = [
-          ...new Set(flagged.flatMap(({ findings }) => findings.map((f) => f.category))),
-        ];
+        const categoryList = [...new Set(allFindings.map((f) => f.category))];
         const panel = createFileWarningPanel(
           root,
           `${fileList}\n\nCategories found: ${categoryList.join(", ")}`,

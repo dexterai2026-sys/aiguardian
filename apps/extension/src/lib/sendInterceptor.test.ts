@@ -71,11 +71,38 @@ describe("attachSendInterceptor", () => {
     document.querySelector<HTMLButtonElement>(".guardian-btn-send-masked")!.click();
 
     expect(composeBox.value).toBe("email [EMAIL_1]");
-    expect(onMasked).toHaveBeenCalledExactlyOnceWith(new Map([["[EMAIL_1]", "jane@example.com"]]));
+    expect(onMasked).toHaveBeenCalledExactlyOnceWith(
+      new Map([["[EMAIL_1]", "jane@example.com"]]),
+      emailFinding("email jane@example.com"),
+    );
     expect(document.querySelector(".guardian-interception-panel")).toBeNull();
     // The replayed Enter re-runs detectNow against the now-masked (finding-free) text, so it
     // proceeds straight through to the site's own handler rather than intercepting again.
     expect(siteHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onFindings once a panel is actually shown, with the findings that triggered it", () => {
+    document.body.innerHTML = "<textarea id='compose'></textarea>";
+    const composeBox = document.querySelector<HTMLTextAreaElement>("#compose")!;
+    composeBox.value = "email jane@example.com";
+    const onFindings = vi.fn();
+
+    attachSendInterceptor({ composeBox, sendButton: null, detectNow: emailFinding, onFindings });
+    pressEnter(composeBox);
+
+    expect(onFindings).toHaveBeenCalledExactlyOnceWith(emailFinding("email jane@example.com"));
+  });
+
+  it("never calls onFindings when there's nothing to review", () => {
+    document.body.innerHTML = "<textarea id='compose'></textarea>";
+    const composeBox = document.querySelector<HTMLTextAreaElement>("#compose")!;
+    composeBox.value = "just a normal message";
+    const onFindings = vi.fn();
+
+    attachSendInterceptor({ composeBox, sendButton: null, detectNow: emailFinding, onFindings });
+    pressEnter(composeBox);
+
+    expect(onFindings).not.toHaveBeenCalled();
   });
 
   it('"Edit" removes the panel without changing the text or replaying anything', () => {

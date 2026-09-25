@@ -352,6 +352,21 @@ shows the resulting one-time notice, dismissed and remembered via
   Never transmitted anywhere (data-minimization principle) — stored in `chrome.storage.local`,
   with a manual "clear stats" control.
 
+**Delivered.** Counters increment at the discrete moment a review panel is actually shown to the
+person, not on every debounced re-scan while typing — `sendInterceptor.ts` gained an `onFindings`
+callback (fired whenever a panel appears) and its existing `onMasked` callback now also receives
+the triggering findings, so counting "shown" vs. "masked" doesn't need a second detection pass.
+`fileUploadInterceptor.ts` gained the equivalent `onFindings` (there's no masked-file equivalent -
+a file can only be canceled or uploaded unchanged). All four content scripts (generic-fallback and
+the three adapters) wire both into `lib/usageStats.ts`.
+
+The actual per-category counting (`lib/usageStatsTally.ts`) is pure and unit-tested; the
+chrome.storage.local read/write around it (`lib/usageStats.ts`) is thin wiring, in the same
+deliberately-untested-directly style as `lib/siteSettingsStorage.ts` — exercised instead by
+`e2e/popup.spec.ts` triggering a real finding and a real masked send against a fixture page, then
+checking the popup's stats table. The popup's "Clear stats" button removes the stored table
+entirely; the empty state and the table are mutually exclusive, never both shown.
+
 ### PR 14 — Local family-mode scaffolding
 
 - A mode toggle (personal/family) and age-profile setting, stored locally (`chrome.storage.local`
