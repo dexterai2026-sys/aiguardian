@@ -72,3 +72,62 @@ owner as an accepted tradeoff, not an oversight, before implementing PR 14.
   the previous save (PBKDF2 alone takes real, human-perceptible time) had finished, silently
   discarding the edit. `options/main.ts` now tracks the latest pending save and waits for it before
   actually locking.
+
+## Addendum (PR 15): a session-only cache so content scripts can read the vault too
+
+PR 15 (family-mode response flagging) needs to check the AI's own replies against the vault (Tier
+2), not just the person's own outgoing text. But the decrypted vault only ever exists in the
+options page's own JS memory (per the decision above) - a separate, unreachable JS context from the
+content scripts running on chatgpt.com, claude.ai, etc. This is the same kind of real tradeoff as
+the PBKDF2-vs-Argon2id choice above, so it went through the same explicit-discussion process with
+the project owner before implementation, not a default picked silently.
+
+**Options considered:**
+
+- **Do nothing; scope PR 15 to content-flag categories only, skip vault-matching on responses.**
+  Rejected: the owner's explicit ask was that both sides of a monitored conversation be protected,
+  including vault matches (a parent's whole reason to register a child's address/school in the
+  vault is to catch it coming back from either direction).
+- **Re-derive/decrypt the vault inside every content script.** Rejected: would mean either passing
+  the passphrase to content scripts (defeating the point of scoping it to the options page) or
+  re-prompting for it on every AI site tab, which fails the "no extra hardship on the user, must
+  not feel bulky" requirement.
+- **Cache the decrypted vault in `chrome.storage.session`, populated once on unlock.** Chosen. This
+  is memory-only storage (cleared automatically on full browser close, never written to disk), and
+  it's what makes decrypted vault contents reachable from a content script's separate JS context at
+  all.
+
+**Decision: `chrome.storage.session`, with an "unlock once, auto-lock on inactivity" sliding
+expiration - the same pattern password manager extensions use for exactly this problem.**
+
+- Populated by `options/main.ts` only when family mode is on, right after a successful unlock and
+  after every vault edit (add/remove entry) - personal-mode users get zero additional exposure from
+  this cache existing at all.
+- `lib/vaultSessionCache.ts` auto-expires the cache after 15 minutes of no reads (`IDLE_TIMEOUT_MS`,
+  a sliding window - every read extends it), so active use is never interrupted but the cache
+  reliably clears itself if the person walks away. A manual "Lock now" button was considered and
+  explicitly rejected by the owner: it would be UI the person has to think about for a feature that
+  should just work quietly in the background, and the idle timeout already covers the real risk
+  (the device being left unattended) without asking anything of the user.
+- The options page's own "Lock" button (locking that page's own in-memory view) deliberately does
+  **not** clear this cache - the two have independent lifetimes by design, since locking the options
+  page is a per-tab UI action, not a statement that family-mode protection on other open AI-site
+  tabs should stop working until the owner re-opens options and re-unlocks.
+- By default, `chrome.storage.session` is readable only from "trusted" extension contexts (the
+  background service worker, extension pages) - content scripts count as "untrusted" for this
+  purpose even though they're this same extension's own code, and can't read it at all until
+  `background/index.ts` calls `chrome.storage.session.setAccessLevel({accessLevel:
+  "TRUSTED_AND_UNTRUSTED_CONTEXTS"})`.
+- The vault (Tier 2) and the vault-free `content.*` categories (self-harm/sexual/violence/secrecy,
+  Tier 1) are deliberately decoupled (`lib/familyContext.ts`): the cache being locked, expired, or
+  simply never unlocked this browser session must not also silently disable the vault-free content
+  categories, which need no vault at all. A real startup race was found this way, not just
+  anticipated: a content script can run before the background worker's `setAccessLevel` grant has
+  completed, so `lib/vaultSessionCache.ts`'s reads are wrapped in a try/catch that treats any
+  storage-access failure the same as "cache unavailable" (`null`), rather than letting it throw and
+  silently abort the entire scan (vault-free categories included).
+
+This addendum does not change any decision above it - PBKDF2, `chrome.storage.local` for the
+encrypted-at-rest blob, and no recovery mechanism all stand as originally decided. It only adds a
+second, deliberately weaker-lived, memory-only copy of the *decrypted* vault, scoped to family mode
+and to the current browser session.

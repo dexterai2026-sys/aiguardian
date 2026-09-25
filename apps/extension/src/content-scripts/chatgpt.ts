@@ -8,6 +8,8 @@
 import { detect } from "@guardian/engine-ts";
 import type { Context, RestoreMap } from "@guardian/engine-ts";
 import { chatgptAdapter, CHATGPT_RESPONSE_CONTAINER_SELECTOR } from "../adapters/chatgpt.js";
+import { attachFamilyResponseFlagging } from "../lib/familyResponseFlagging.js";
+import { getFamilyContext } from "../lib/familyContext.js";
 import { attachFileUploadInterceptor } from "../lib/fileUploadInterceptor.js";
 import { isFixtureTarget } from "../lib/fixtureTarget.js";
 import { debounce } from "../lib/debounce.js";
@@ -79,6 +81,15 @@ function attach(composeBox: HTMLElement): void {
       responseContainerSelector: CHATGPT_RESPONSE_CONTAINER_SELECTOR,
     });
   }
+
+  // Family-mode response flagging (PR 15): safe here for the same reason response restore is -
+  // the adapter's response-container selector reliably isolates the AI's own reply. getContext()
+  // resolves to null (no-op) outside family mode or while the vault session cache is locked.
+  attachFamilyResponseFlagging({
+    root: document.body,
+    responseContainerSelector: CHATGPT_RESPONSE_CONTAINER_SELECTOR,
+    getContext: () => getFamilyContext("chatgpt"),
+  });
 }
 
 // In production, this script only ever runs on chatgpt.com/chat.openai.com (per manifest.json),

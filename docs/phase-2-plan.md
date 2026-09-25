@@ -413,6 +413,39 @@ the edit - `options/main.ts` now tracks the latest pending save and waits for it
   with personal mode's existing behavior. Document this limitation directly in the UI copy so it
   isn't misread as "a parent was notified."
 
+**Delivered.** Full scope, both content-flag categories (Tier 1: self-harm/sexual/violence/
+secrecy-from-parents) *and* vault matching (Tier 2) run against the AI's own reply — confirmed with
+the owner as the required scope: a monitored conversation's protection has to cover both sides (the
+compose box, already covered since PR 4, and the AI's reply, new here), not content-flags alone.
+
+This required a real architecture decision, discussed with the owner before implementation: the
+decrypted vault only ever lives in the options page's own JS memory (PR 14), a separate JS context
+content scripts on AI sites can't reach at all. The chosen solution — a `chrome.storage.session`
+cache of the decrypted vault, populated on unlock/edit only in family mode, with a 15-minute sliding
+idle-timeout auto-lock (the same pattern password manager extensions use) — is recorded in
+`docs/adr/0007-local-vault-crypto-choices.md`'s addendum, including the alternatives rejected (no
+vault-matching on responses at all; re-deriving/re-prompting per tab) and why a manual "Lock now"
+button was cut after the owner pushed back on adding UI the person has to think about for a feature
+that should just work quietly.
+
+`lib/vaultSessionCache.ts` (the session cache, with unit-tested pure idle-timeout logic),
+`lib/familyContext.ts` (builds the `Context` each adapter's scan needs, or `null` when family-mode
+detection shouldn't run at all), and `lib/familyResponseFlagging.ts` (the actual DOM scan/flag,
+text-node-safe so it never disturbs the response's own rendered HTML) are new. Wired into the
+ChatGPT, Claude, and Gemini adapters only — not the generic fallback, for the same reason response
+restore (PR 7) isn't: only an adapter's verified response-container selector reliably isolates the
+AI's own reply from the site's own echo of what was sent.
+
+The vault (Tier 2) and the vault-free `content.*` categories (Tier 1) are deliberately decoupled in
+`lib/familyContext.ts`: the session cache being locked, expired, or never unlocked this browser
+session falls back to an empty vault (`vault: []`) rather than disabling detection outright, so
+family mode's baseline (vault-free) protection never silently depends on whether the vault happens
+to be unlocked right now. A real startup race was found through this work, not just anticipated: a
+content script can run before the background worker's `chrome.storage.session.setAccessLevel`
+grant (needed at all, since content scripts are "untrusted" contexts for session storage by
+default) completes; `getVaultSessionCache()` now treats any such storage-access failure as "cache
+unavailable" via try/catch, rather than letting it throw and silently abort the entire scan.
+
 ### PR 16 — Store readiness
 
 - Audit final manifest permissions against what's actually used; narrow anywhere possible.
