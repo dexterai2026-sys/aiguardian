@@ -16,6 +16,22 @@
     {
       "matches": ["http://localhost/*"],
       "js": ["src/content-scripts/probe.ts"]
+    },
+    {
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://copilot.microsoft.com/*",
+        "https://character.ai/*",
+        "https://beta.character.ai/*",
+        "https://perplexity.ai/*",
+        "https://poe.com/*",
+        "https://you.com/*",
+        "http://localhost/*"
+      ],
+      "js": ["src/content-scripts/generic-fallback.ts"]
     }
   ]
 }
