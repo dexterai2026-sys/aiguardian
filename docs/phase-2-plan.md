@@ -414,7 +414,7 @@ the edit - `options/main.ts` now tracks the latest pending save and waits for it
   isn't misread as "a parent was notified."
 
 **Delivered.** Full scope, both content-flag categories (Tier 1: self-harm/sexual/violence/
-secrecy-from-parents) *and* vault matching (Tier 2) run against the AI's own reply — confirmed with
+secrecy-from-parents) _and_ vault matching (Tier 2) run against the AI's own reply — confirmed with
 the owner as the required scope: a monitored conversation's protection has to cover both sides (the
 compose box, already covered since PR 4, and the AI's reply, new here), not content-flags alone.
 

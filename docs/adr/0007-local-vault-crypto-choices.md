@@ -117,7 +117,7 @@ expiration - the same pattern password manager extensions use for exactly this p
   background service worker, extension pages) - content scripts count as "untrusted" for this
   purpose even though they're this same extension's own code, and can't read it at all until
   `background/index.ts` calls `chrome.storage.session.setAccessLevel({accessLevel:
-  "TRUSTED_AND_UNTRUSTED_CONTEXTS"})`.
+"TRUSTED_AND_UNTRUSTED_CONTEXTS"})`.
 - The vault (Tier 2) and the vault-free `content.*` categories (self-harm/sexual/violence/secrecy,
   Tier 1) are deliberately decoupled (`lib/familyContext.ts`): the cache being locked, expired, or
   simply never unlocked this browser session must not also silently disable the vault-free content
@@ -129,5 +129,5 @@ expiration - the same pattern password manager extensions use for exactly this p
 
 This addendum does not change any decision above it - PBKDF2, `chrome.storage.local` for the
 encrypted-at-rest blob, and no recovery mechanism all stand as originally decided. It only adds a
-second, deliberately weaker-lived, memory-only copy of the *decrypted* vault, scoped to family mode
+second, deliberately weaker-lived, memory-only copy of the _decrypted_ vault, scoped to family mode
 and to the current browser session.
