@@ -1,0 +1,42 @@
+[
+  {
+    "category": "pii.home_address",
+    "pattern": "\\b\\d{1,5}\\s+(?:[A-Za-z0-9.'-]+\\s){1,3}(?:Street|St\\.?|Avenue|Ave\\.?|Boulevard|Blvd\\.?|Road|Rd\\.?|Lane|Ln\\.?|Drive|Dr\\.?|Court|Ct\\.?|Place|Pl\\.?|Way|Terrace|Ter\\.?|Circle|Cir\\.?)\\b",
+    "flags": "i",
+    "confidence": 0.7,
+    "placeholderPrefix": "ADDRESS",
+    "description": "House number + 1-3 words + a common street suffix. Heuristic: doesn't validate the street name is real, so precision is lower than the structured PII categories (see docs/phase-1-plan.md PR 6 notes)."
+  },
+  {
+    "category": "pii.dob",
+    "pattern": "(?<=\\b(?:born(?:\\s+on)?|birthday(?:\\s+is)?|date of birth(?:\\s*:|\\s+is)?|dob(?:\\s*:)?)\\s)(?:\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}|[A-Za-z]+\\.?\\s+\\d{1,2},?\\s+\\d{4})",
+    "flags": "i",
+    "confidence": 0.75,
+    "placeholderPrefix": "DOB",
+    "description": "Only matches a date immediately after a birth-context keyword (born/birthday/DOB/date of birth), not any bare date - an arbitrary date isn't necessarily a date of birth. Assumption, stated per CLAUDE.md's ambiguity rule."
+  },
+  {
+    "category": "pii.government_id",
+    "pattern": "\\b(?:passport|driver'?s?\\s+license|license|id)\\s+(?:number|no\\.?|#)\\s*(?:is|:|#)?\\s*[a-z0-9]{6,12}\\b",
+    "flags": "i",
+    "confidence": 0.7,
+    "placeholderPrefix": "GOVID",
+    "description": "Requires an explicit 'passport/license/ID number' label immediately before the code (whole phrase is masked, not just the code) to avoid matching bare mentions of 'ID'. Format varies too much across document types to validate the code itself."
+  },
+  {
+    "category": "pii.bank_account",
+    "pattern": "\\b(?:account|acct\\.?|routing)\\s+(?:number|no\\.?|#)\\s*(?:is|:|#)?\\s*\\d{8,17}\\b",
+    "flags": "i",
+    "confidence": 0.75,
+    "placeholderPrefix": "BANK",
+    "description": "Requires an explicit 'account/routing number' label immediately before the digits (whole phrase is masked) to avoid matching arbitrary long numbers."
+  },
+  {
+    "category": "pii.medical",
+    "pattern": "\\b(?:diagnosed with|has been diagnosed with|takes medication for|is allergic to|has an allergy to)\\s+[a-z][a-z0-9\\s]{1,20}\\b",
+    "flags": "i",
+    "confidence": 0.6,
+    "placeholderPrefix": "MEDICAL",
+    "description": "Keyword-phrase heuristic only (diagnosed with / allergic to / takes medication for). Lower confidence than other Tier-1 categories: can over-capture trailing words after the condition name, and misses conditions phrased without one of these lead-in phrases. Not gated by the Phase 1 quality target (see docs/phase-1-plan.md PR 6 notes)."
+  }
+]

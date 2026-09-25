@@ -1,0 +1,18 @@
+{"id":"addr-001","text":"we live at 42 Maple Street","expected":[{"category":"pii.home_address","start":11,"end":26}],"notes":"basic street address, matches the example in CLAUDE.md"}
+{"id":"addr-002","text":"Our new house is 128 North Elm Court, come visit!","expected":[{"category":"pii.home_address","start":17,"end":36}],"notes":"multi-word street name with a different suffix"}
+{"id":"addr-neg-001","text":"The store is open 24 hours a day.","expected":[],"notes":"a number followed by words, but no street suffix"}
+{"id":"addr-neg-002","text":"We scored 42 points in the game last Street Fighter tournament.","expected":[],"notes":"contains a number and the word Street, but not in address shape"}
+{"id":"dob-001","text":"I was born on 3/15/2012 in the city.","expected":[{"category":"pii.dob","start":14,"end":23}],"notes":"numeric date after 'born on'"}
+{"id":"dob-002","text":"Her birthday is March 15, 2012 next week.","expected":[{"category":"pii.dob","start":16,"end":30}],"notes":"month-name date after 'birthday is'"}
+{"id":"dob-003","text":"DOB: 3/15/2012 is listed on the form.","expected":[{"category":"pii.dob","start":5,"end":14}],"notes":"numeric date after 'DOB:' label"}
+{"id":"dob-neg-001","text":"The meeting is scheduled for 3/15/2024, not related to anyone's birthday.","expected":[],"notes":"a date with no birth-context keyword directly before it; assumption: bare dates are not flagged as DOB"}
+{"id":"govid-001","text":"My passport number is A1234567 for the trip.","expected":[{"category":"pii.government_id","start":3,"end":30}],"notes":"passport number with explicit label"}
+{"id":"govid-002","text":"License Number: XY123456 was issued last year.","expected":[{"category":"pii.government_id","start":0,"end":24}],"notes":"driver's license number with colon label"}
+{"id":"govid-neg-001","text":"Please bring a photo ID to the front desk.","expected":[],"notes":"mentions 'ID' but no 'number/no/#' label or code follows"}
+{"id":"bank-001","text":"My account number is 123456789012 for the transfer.","expected":[{"category":"pii.bank_account","start":3,"end":33}],"notes":"bank account number with explicit label"}
+{"id":"bank-002","text":"The routing number is 021000021 for our bank.","expected":[{"category":"pii.bank_account","start":4,"end":31}],"notes":"routing number with explicit label"}
+{"id":"bank-neg-001","text":"Please call our support line at 8005551234 for help.","expected":[],"notes":"a long digit run with no account/routing label"}
+{"id":"medical-001","text":"She has been diagnosed with asthma.","expected":[{"category":"pii.medical","start":4,"end":34}],"notes":"diagnosis keyword phrase, clean sentence ending"}
+{"id":"medical-002","text":"He takes medication for ADHD.","expected":[{"category":"pii.medical","start":3,"end":28}],"notes":"medication keyword phrase, clean sentence ending"}
+{"id":"medical-003","text":"He is allergic to peanuts.","expected":[{"category":"pii.medical","start":3,"end":25}],"notes":"allergy keyword phrase"}
+{"id":"medical-neg-001","text":"The doctor's office is closed on weekends.","expected":[],"notes":"mentions medical context but no diagnosis/medication/allergy phrase"}
