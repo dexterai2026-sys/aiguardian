@@ -1,0 +1,22 @@
+{
+  "name": "@guardian/extension",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Guardian browser extension (Manifest V3): Chrome, Edge, Brave.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@guardian/engine-ts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.1",
+    "vite-plugin-web-extension": "^4.5.1"
+  }
+}

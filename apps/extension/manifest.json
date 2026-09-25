@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Guardian",
+  "version": "0.0.1",
+  "description": "Detects personal info and hidden prompt-injection content before it reaches an AI, entirely on your device.",
+  "action": {
+    "default_popup": "src/popup/index.html"
+  },
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "options_page": "src/options/index.html",
+  "permissions": ["storage", "activeTab"]
+}
