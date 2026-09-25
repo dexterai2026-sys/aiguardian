@@ -1,0 +1,13 @@
+{"id":"selfharm-001","text":"Sometimes I think about suicide and it scares me.","expected":[{"category":"content.self_harm","start":12,"end":31}],"notes":"self-harm ideation phrasing"}
+{"id":"selfharm-002","text":"I've been cutting myself when things get bad.","expected":[{"category":"content.self_harm","start":10,"end":24}],"notes":"self-harm act phrasing"}
+{"id":"selfharm-neg-001","text":"My favorite movie has a scene where the hero saves the day.","expected":[],"notes":"unrelated positive content"}
+{"id":"sexual-001","text":"Can you send me nudes tonight?","expected":[{"category":"content.sexual","start":8,"end":21}],"notes":"explicit-content request, grooming-relevant phrasing"}
+{"id":"sexual-002","text":"She posted a nude photo online.","expected":[{"category":"content.sexual","start":13,"end":23}],"notes":"explicit-content mention"}
+{"id":"sexual-neg-001","text":"We were just talking about art and photography.","expected":[],"notes":"photography mentioned in an unrelated, benign context"}
+{"id":"violence-001","text":"If you don't stop, I'm gonna hurt you.","expected":[{"category":"content.violence","start":23,"end":37}],"notes":"direct threat phrasing"}
+{"id":"violence-002","text":"He said he's going to bring a gun to school tomorrow.","expected":[{"category":"content.violence","start":22,"end":43}],"notes":"weapon-to-school threat phrasing"}
+{"id":"violence-neg-001","text":"The movie villain says 'I'm gonna kill you' right before the credits.","expected":[],"notes":"hard negative: quoting a movie villain is not a real threat. The current pattern will incorrectly match this (documented known limitation in rules/patterns/content-flags.json) - kept as a true hard negative so the eval harness measures the real false positive honestly, rather than mislabeling it as expected."}
+{"id":"secrecy-001","text":"Don't tell your parents about this, okay?","expected":[{"category":"content.secrecy_from_parents","start":0,"end":23}],"notes":"explicit secrecy-from-parents request"}
+{"id":"secrecy-002","text":"Let's keep this a secret, it's just between us.","expected":[{"category":"content.secrecy_from_parents","start":6,"end":24}],"notes":"secrecy phrasing"}
+{"id":"secrecy-neg-001","text":"It's a surprise party, so keep it a secret from Sarah!","expected":[],"notes":"hard negative: ordinary surprise-party secrecy is not a concerning request to hide something from parents. The current pattern will incorrectly match this (documented known limitation) - kept as a true hard negative so the eval harness measures the real false positive honestly."}
+{"id":"content-neg-general-001","text":"We had a normal conversation about homework and chores.","expected":[],"notes":"no content-flag category present"}

@@ -1,0 +1,34 @@
+[
+  {
+    "category": "content.self_harm",
+    "pattern": "\\b(?:want(?:s)? to (?:kill|hurt) (?:myself|himself|herself)|think(?:ing)? about suicide|suicidal thoughts|self-harm|self harm|cutting myself|end(?:ing)? my life)\\b",
+    "flags": "i",
+    "confidence": 0.7,
+    "placeholderPrefix": "SELFHARM",
+    "description": "Keyword-phrase heuristic for family-mode response flagging. Family mode only (gated in code, not in this pattern) - never applies in personal mode, per CLAUDE.md's 'adult mode reports to no one' principle. Lower recall than structured PII by nature of keyword matching; a real ML classifier is Tier 3, not Phase 1."
+  },
+  {
+    "category": "content.sexual",
+    "pattern": "\\b(?:send (?:me )?nudes|nude (?:pic|photo|picture)s?|sexy (?:pic|photo|picture)s?|explicit (?:pic|photo|picture)s?)\\b",
+    "flags": "i",
+    "confidence": 0.6,
+    "placeholderPrefix": "SEXUAL",
+    "description": "Narrow set of explicit-content-request phrasings relevant to grooming/exploitation risk, not a general sexual-content classifier. Family mode only."
+  },
+  {
+    "category": "content.violence",
+    "pattern": "\\b(?:(?:going to|gonna) (?:kill|hurt|beat up) (?:you|him|her|them)|bring a (?:gun|knife) to school)\\b",
+    "flags": "i",
+    "confidence": 0.65,
+    "placeholderPrefix": "VIOLENCE",
+    "description": "Direct-threat phrasings. Does not attempt to distinguish a real threat from quoting media/fiction (e.g. discussing a movie) - a known precision limitation for Phase 1. Family mode only."
+  },
+  {
+    "category": "content.secrecy_from_parents",
+    "pattern": "\\b(?:don'?t tell (?:your|my) (?:parents|mom|dad|mother|father)|keep (?:this|it) (?:a secret|between us)|our little secret|this stays between us)\\b",
+    "flags": "i",
+    "confidence": 0.75,
+    "placeholderPrefix": "SECRECY",
+    "description": "Flags requests for secrecy that (in an AI chat, in family mode) may indicate manipulation or unsafe advice-seeking. Known false-positive risk: ordinary secret-keeping unrelated to safety (e.g. a surprise party) matches the same phrasing - see test-corpus/content-flags.jsonl. Family mode only."
+  }
+]
