@@ -6,7 +6,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
   <body>
-    <div id="app">Guardian settings</div>
+    <div id="app">
+      <h1>Guardian settings</h1>
+
+      <section>
+        <h2>Mode</h2>
+        <label
+          ><input type="radio" name="mode" id="mode-personal" value="personal" /> Personal</label
+        >
+        <label><input type="radio" name="mode" id="mode-family" value="family" /> Family</label>
+
+        <div id="age-profile-row">
+          <label for="age-profile">Age profile</label>
+          <select id="age-profile">
+            <option value="child">Child</option>
+            <option value="teen">Teen</option>
+            <option value="adult">Adult</option>
+          </select>
+        </div>
+      </section>
+
+      <section id="vault-section">
+        <h2>Personal vault</h2>
+        <p>
+          Registered values (like a child's name, school, or home address) are matched and masked
+          before they reach any AI, on this device only. The vault is encrypted with a passphrase
+          only you know - Guardian never stores it, and
+          <strong>if you forget it, the vault cannot be recovered.</strong>
+        </p>
+
+        <div id="vault-locked">
+          <label for="vault-passphrase">Passphrase</label>
+          <input type="password" id="vault-passphrase" autocomplete="off" />
+          <button id="vault-unlock" type="button">Unlock vault</button>
+          <p id="vault-error" hidden></p>
+        </div>
+
+        <div id="vault-unlocked" hidden>
+          <ul id="vault-entry-list"></ul>
+
+          <form id="vault-add-form">
+            <select id="vault-add-category">
+              <option value="pii.name">Name</option>
+              <option value="pii.school">School</option>
+              <option value="pii.home_address">Home address</option>
+              <option value="pii.phone">Phone</option>
+              <option value="pii.email">Email</option>
+              <option value="pii.dob">Date of birth</option>
+              <option value="pii.medical">Medical</option>
+              <option value="pii.government_id">Government ID</option>
+              <option value="pii.ssn">SSN</option>
+              <option value="pii.payment_card">Payment card</option>
+              <option value="pii.bank_account">Bank account</option>
+            </select>
+            <input type="text" id="vault-add-value" placeholder="Value to protect" />
+            <button id="vault-add-submit" type="submit">Add</button>
+          </form>
+
+          <button id="vault-lock" type="button">Lock vault</button>
+        </div>
+      </section>
+    </div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

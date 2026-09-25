@@ -382,6 +382,27 @@ entirely; the empty state and the table are mutually exclusive, never both shown
 - Record this scope choice — and that this vault is expected to be reworked, not necessarily
   reused as-is, once Phase 3 adds real backend sync — as an ADR in `docs/adr/`.
 
+**Delivered.** The owner was asked to choose the key-derivation algorithm before any code was
+written (a real privacy-principle decision, not a default): PBKDF2 (native WebCrypto, 600,000
+iterations, OWASP's current minimum) over Argon2id, since Argon2id isn't a WebCrypto built-in and
+would mean a new dependency for a threat model (device-local access, not remote brute force) that
+doesn't clearly need it yet - see `docs/adr/0007-local-vault-crypto-choices.md` for the full
+reasoning, including why this is scoped to the local vault only and not a decision about the Phase
+3 dashboard's vault. Mode/age-profile/vault all use `chrome.storage.local`, confirmed with the
+owner, not `.sync`.
+
+`lib/vaultCrypto.ts` (PBKDF2 + AES-GCM, fresh salt/IV per save) is unit-tested in isolation;
+`lib/vaultStorage.ts` and `lib/familyModeStorage.ts` are thin chrome.storage.local wiring,
+deliberately not unit-tested directly, exercised instead by `e2e/options.spec.ts` in a real
+browser - including asserting the raw passphrase never appears anywhere in stored data. The
+options page (`src/options/`) holds the passphrase and decrypted vault contents only in its own
+memory for as long as it's open; closing or reloading it is itself a lock.
+
+A real bug surfaced and was fixed during implementation, not just anticipated: clicking "Lock"
+immediately after adding or removing a vault entry could clear in-memory state before the
+previous save (PBKDF2 alone takes real, human-perceptible time) had finished, silently discarding
+the edit - `options/main.ts` now tracks the latest pending save and waits for it before locking.
+
 ### PR 15 — Family-mode response flagging in UI
 
 - When family mode is on (from PR 14), run `detect()` on the AI's response text with
