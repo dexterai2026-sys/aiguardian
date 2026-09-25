@@ -478,7 +478,24 @@ fixture-based e2e test, since each needed a real AI site or a real rich-text edi
   `setComposeBoxText`'s direct `.textContent` overwrite changed what was on screen without touching
   that internal model, so replaying the send could go on to submit the editor's own (still
   original) state. Fixed via `execCommand("insertText", ...)` in `lib/sendInterceptor.ts`, which
-  goes through the same native text-insertion path a real keystroke would.
+  goes through the same native text-insertion path a real keystroke would - and, once that alone
+  turned out not to be enough (ProseMirror's own DOM-mutation reconciliation isn't guaranteed to
+  finish synchronously within the same call), `nextAnimationFrame()` now waits two animation frames
+  before replaying the send, giving the editor a full flush cycle to catch up first.
+- **None of this extension's injected UI ever had real CSS styling.** The protection badge and
+  every review panel (send interception, file upload, hidden-text) relied on a class name with no
+  stylesheet ever backing it - unnoticed against this repo's plain fixture pages (no CSS reset, so
+  unstyled HTML still renders with reasonable browser-default spacing), but on a real site with an
+  aggressive CSS reset (e.g. Tailwind's preflight, which ChatGPT and Gemini's own UIs both use in
+  some form), the exact spacing/display unstyled elements depend on gets stripped, collapsing a
+  three-button panel into unreadable run-together text ("Send maskedEditSend anyway"). Fixed by
+  giving every element in `lib/interceptionPanel.ts` and `lib/protectionBadge.ts` real _inline_
+  styles (which beat essentially any host-page stylesheet selector on specificity, the same
+  reasoning `lib/highlightOverlay.ts` already relied on for its own mirror element) - primary
+  actions (the recommended, safe choice) are visually emphasized, secondary actions (Edit, Send
+  anyway) stay neutral rather than alarming, per CLAUDE.md's "protect and teach, don't restrict"
+  tone. Verified with a local script simulating an aggressive reset against a real headless
+  Chromium instance, not just the plain fixtures.
 - **Vault entries never protected outgoing text at all, in either mode** - a structural gap since
   PR 14 introduced the vault, not a regression from any single change: every content script's
   outgoing detection used a hardcoded context with no `vault` field whatsoever. Fixed with the
