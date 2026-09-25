@@ -22,6 +22,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # GitHub-hosted runners don't have Chromium pre-installed the way this repo's own dev
+      # containers do; the extension's e2e suite needs one. --with-deps also installs the OS
+      # packages Chromium needs to actually launch on a bare runner.
+      - name: Install Playwright's Chromium
+        run: pnpm --filter @guardian/extension exec playwright install --with-deps chromium
+
       - name: Lint
         run: pnpm lint
 
