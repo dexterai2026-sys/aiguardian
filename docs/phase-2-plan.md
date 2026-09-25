@@ -455,6 +455,24 @@ unavailable" via try/catch, rather than letting it throw and silently abort the 
   notes.
 - Not a code-heavy PR; mostly config, copy, and assets.
 
+**Partially delivered — blocked on the owner for assets, not attempted here.** Everything writable
+from inside this repo is done; see `docs/store-listing.md` for the full detail:
+
+- `manifest.json`'s `activeTab` permission removed — an audit found nothing in the codebase calls
+  `chrome.tabs.*`/`chrome.scripting.*` (every content script is declared statically instead), so it
+  was dead weight on the review surface. Every remaining permission and host-permission entry
+  (including the all-sites `page-scanner` grant from PR 11) was re-checked against actual usage and
+  is justified — see `docs/store-listing.md`'s permission table.
+- Single-purpose description, per-permission justifications, a full data-usage-disclosure answer
+  set (honestly "not collected" across every category, since there's still no backend at all), and
+  draft store-listing copy (short + detailed description) are written in `docs/store-listing.md`,
+  ready for the owner's review before submission.
+- **Not attempted, needs the owner**: an icon set (`manifest.json` has no `icons` field, and there
+  are no image assets anywhere in `apps/extension` to add one from), screenshots for both stores,
+  support email/website URL for the listing forms, and the store developer accounts themselves
+  (Chrome Web Store, Microsoft Partner Center) — none of these can be fabricated or created from
+  this session.
+
 ## Open questions for the owner (surface at the relevant PR, not all at once)
 
 - Vite MV3 plugin choice: `@crxjs/vite-plugin` vs `vite-plugin-web-extension` vs a manual
